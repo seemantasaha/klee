@@ -1,0 +1,6 @@
+Error: ASSERTION FAIL: s=="hi"
+File: ArrayNew.cpp
+Line: 40
+assembly.ll line: 153
+Stack: 
+	#000000153 in main (=1) at ArrayNew.cpp:40

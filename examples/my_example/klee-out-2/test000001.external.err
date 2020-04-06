@@ -1,0 +1,7 @@
+Error: failed external call: _ZNSolsEPFRSoS_E
+File: simple_2.cpp
+Line: 6
+assembly.ll line: 57
+Stack: 
+	#000000057 in _Z8get_signi () at simple_2.cpp:6
+	#100000097 in main () at simple_2.cpp:19

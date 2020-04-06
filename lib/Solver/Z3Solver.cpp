@@ -24,6 +24,7 @@
 #include "klee/Solver/SolverImpl.h"
 #include "llvm/Support/CommandLine.h"
 #include "llvm/Support/raw_ostream.h"
+#include "iostream"
 
 namespace {
 // NOTE: Very useful for debugging Z3 behaviour. These files can be given to
@@ -300,6 +301,11 @@ bool Z3SolverImpl::internalRunSolver(
     *dumpedQueriesFile << "; end Z3 query\n\n";
     dumpedQueriesFile->flush();
   }
+  // std::cout << "; start Z3 query\n";
+  // std::cout << Z3_solver_to_string(builder->ctx, theSolver);
+  // std::cout << "(check-sat)\n";
+  // std::cout << "(reset)\n";
+  // std::cout << "; end Z3 query\n\n";
 
   ::Z3_lbool satisfiable = Z3_solver_check(builder->ctx, theSolver);
   runStatusCode = handleSolverResponse(theSolver, satisfiable, objects, values,

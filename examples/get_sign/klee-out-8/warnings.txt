@@ -1,0 +1,2 @@
+KLEE: ERROR: Failed to create core solver
+

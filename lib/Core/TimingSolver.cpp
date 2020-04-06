@@ -27,7 +27,7 @@ bool TimingSolver::evaluate(const ExecutionState& state, ref<Expr> expr,
   // Fast path, to avoid timer and OS overhead.
   if (ConstantExpr *CE = dyn_cast<ConstantExpr>(expr)) {
     result = CE->isTrue() ? Solver::True : Solver::False;
-    return true;
+    return true; //???
   }
 
   TimerStatIncrementer timer(stats::solverTime);

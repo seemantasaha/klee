@@ -1,0 +1,7 @@
+KLEE: WARNING: undefined reference to function: _ZNKSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEE7compareEPKc
+KLEE: WARNING: undefined reference to function: _ZNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEC1Ev
+KLEE: WARNING: undefined reference to function: _ZNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEED1Ev
+KLEE: WARNING: undefined reference to function: __gxx_personality_v0
+KLEE: WARNING ONCE: Alignment of memory from call "_Znam" is not modelled. Using alignment of 8.
+KLEE: WARNING ONCE: calling external: _ZNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEC1Ev(94329090579616) at ArrayNew.cpp:38 3
+KLEE: WARNING ONCE: calling external: _ZNKSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEE7compareEPKc(94329090579616, 94329089631520) at /usr/bin/../lib/gcc/x86_64-linux-gnu/7.4.0/../../../../include/c++/7.4.0/bits/basic_string.h:6045 35

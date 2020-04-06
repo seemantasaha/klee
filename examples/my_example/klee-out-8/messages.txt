@@ -1,0 +1,3 @@
+KLEE: Using Z3 solver backend
+KLEE: Logging all queries in .smt2 format to /home/shihua/klee/examples/my_example/klee-out-8/all-queries.smt2
+

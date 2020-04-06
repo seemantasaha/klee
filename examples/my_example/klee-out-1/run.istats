@@ -1,0 +1,92 @@
+version: 1
+creator: klee
+pid: 4058
+cmd: simple.bc
+
+
+positions: instr line
+event: Icov : CoveredInstructions
+event: Forks : Forks
+event: Ireal : InstructionRealTimes
+event: Itime : InstructionTimes
+event: I : Instructions
+event: UCdist : MinDistToUncovered
+event: Rtime : ResolveTime
+event: States : States
+event: Iuncov : UncoveredInstructions
+event: Q : Queries
+event: Qiv : QueriesInvalid
+event: Qv : QueriesValid
+event: Qtime : QueryTime
+events: Icov Forks Ireal Itime I UCdist Rtime States Iuncov Q Qiv Qv Qtime 
+ob=assembly.ll
+fl=simple.cpp
+fn=_Z3fooNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEE
+17 4 1 0 0 0 1 20 0 0 0 0 0 0 0 
+18 4 1 0 0 0 1 19 0 0 0 0 0 0 0 
+19 5 1 0 0 0 1 17 0 0 0 0 0 0 0 
+cfl=/usr/bin/../lib/gcc/x86_64-linux-gnu/7.4.0/../../../../include/c++/7.4.0/bits/basic_string.h
+cfn=_ZSteqIcSt11char_traitsIcESaIcEEbRKNSt7__cxx1112basic_stringIT_T0_T1_EEPKS5_
+calls=1 38 6043
+19 5 11 0 0 0 11 0 0 0 0 0 0 0 0 
+20 5 1 0 0 0 1 2 0 0 0 0 0 0 0 
+23 6 0 0 0 0 0 1 0 0 1 0 0 0 0 
+24 6 0 0 0 0 0 1 0 0 1 0 0 0 0 
+27 8 1 0 0 0 1 0 0 0 0 0 0 0 0 
+28 8 1 0 0 0 1 0 0 0 0 0 0 0 0 
+31 9 1 0 0 0 1 0 0 0 0 0 0 0 0 
+32 9 1 0 0 0 1 0 0 0 0 0 0 0 0 
+fl=/usr/bin/../lib/gcc/x86_64-linux-gnu/7.4.0/../../../../include/c++/7.4.0/bits/basic_string.h
+fn=_ZSteqIcSt11char_traitsIcESaIcEEbRKNSt7__cxx1112basic_stringIT_T0_T1_EEPKS5_
+40 6043 1 0 0 0 1 0 0 0 0 0 0 0 0 
+41 6043 1 0 0 0 1 0 0 0 0 0 0 0 0 
+42 6043 1 0 0 0 1 0 0 0 0 0 0 0 0 
+43 6043 1 0 0 0 1 0 0 0 0 0 0 0 0 
+44 6043 1 0 0 0 1 0 0 0 0 0 0 0 0 
+45 6044 1 0 0 0 1 0 0 0 0 0 0 0 0 
+46 6045 1 0 0 0 1 0 0 0 0 0 0 0 0 
+47 6045 1 0 0 0 1 0 0 0 0 0 0 0 0 
+48 6045 1 0 0 0 1 0 0 0 0 0 0 0 0 
+49 6045 1 0 0 0 1 0 0 0 0 0 0 0 0 
+50 6045 1 0 0 0 1 0 0 0 0 0 0 0 0 
+fl=simple.cpp
+fn=main
+55 11 1 0 0 0 1 14 0 0 0 0 0 0 0 
+56 11 1 0 0 0 1 13 0 0 0 0 0 0 0 
+57 11 1 0 0 0 1 12 0 0 0 0 0 0 0 
+58 11 1 0 0 0 1 11 0 0 0 0 0 0 0 
+59 11 1 0 0 0 1 10 0 0 0 0 0 0 0 
+60 11 1 0 0 0 1 9 0 0 0 0 0 0 0 
+61 12 1 0 0 0 1 8 0 0 0 0 0 0 0 
+62 12 1 0 0 0 1 6 0 0 0 0 0 0 0 
+63 13 1 0 0 0 1 4 0 0 0 0 0 0 0 
+64 13 1 0 0 0 1 3 0 0 0 0 0 0 0 
+68 14 1 0 0 0 1 3 0 0 0 0 0 0 0 
+72 14 1 0 0 0 1 25 0 0 0 0 0 0 0 
+cfn=_Z3fooNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEE
+calls=1 15 4
+72 14 19 0 0 0 19 0 0 0 0 0 0 0 0 
+76 14 1 0 0 0 1 0 0 0 0 0 0 0 0 
+77 14 1 0 0 0 1 0 0 0 0 0 0 0 0 
+78 15 1 0 0 0 1 0 0 0 0 0 0 0 0 
+79 15 1 0 0 0 1 0 0 0 0 0 0 0 0 
+80 15 1 0 0 0 1 0 0 0 0 0 0 0 0 
+83 15 0 0 0 0 0 1 0 0 1 0 0 0 0 
+85 15 0 0 0 0 0 1 0 0 1 0 0 0 0 
+86 15 0 0 0 0 0 1 0 0 1 0 0 0 0 
+87 15 0 0 0 0 0 1 0 0 1 0 0 0 0 
+88 15 0 0 0 0 0 1 0 0 1 0 0 0 0 
+89 15 0 0 0 0 0 1 0 0 1 0 0 0 0 
+92 15 0 0 0 0 0 1 0 0 1 0 0 0 0 
+94 15 0 0 0 0 0 1 0 0 1 0 0 0 0 
+95 15 0 0 0 0 0 1 0 0 1 0 0 0 0 
+96 15 0 0 0 0 0 1 0 0 1 0 0 0 0 
+97 15 0 0 0 0 0 1 0 0 1 0 0 0 0 
+98 14 0 0 0 0 0 1 0 0 1 0 0 0 0 
+99 14 0 0 0 0 0 1 0 0 1 0 0 0 0 
+102 15 0 0 0 0 0 1 0 0 1 0 0 0 0 
+103 15 0 0 0 0 0 1 0 0 1 0 0 0 0 
+104 15 0 0 0 0 0 1 0 0 1 0 0 0 0 
+105 15 0 0 0 0 0 1 0 0 1 0 0 0 0 
+106 15 0 0 0 0 0 1 0 0 1 0 0 0 0 
+107 15 0 0 0 0 0 1 0 0 1 0 0 0 0 

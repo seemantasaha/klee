@@ -1,0 +1,9 @@
+KLEE: WARNING: undefined reference to function: _ZSt17__throw_bad_allocv
+KLEE: WARNING: undefined reference to function: _ZSt20__throw_length_errorPKc
+KLEE: WARNING: undefined reference to function: _ZSt24__throw_out_of_range_fmtPKcz
+KLEE: WARNING: undefined reference to function: _ZSt9terminatev
+KLEE: WARNING: undefined reference to function: __cxa_begin_catch
+KLEE: WARNING: undefined reference to function: __cxa_end_catch
+KLEE: WARNING: undefined reference to function: __cxa_rethrow
+KLEE: WARNING: undefined reference to function: __gxx_personality_v0
+KLEE: WARNING ONCE: Alignment of memory from call "_Znwm" is not modelled. Using alignment of 8.

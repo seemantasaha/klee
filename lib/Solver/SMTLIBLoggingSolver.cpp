@@ -50,7 +50,7 @@ class SMTLIBLoggingSolver : public QueryLoggingSolver
 		: QueryLoggingSolver(_solver, path, ";", queryTimeToLog, logTimedOut)
 		{
 		  //Setup the printer
-		  printer.setOutput(logBuffer);
+          printer.setOutput(logBuffer);
 		}
 };
 
