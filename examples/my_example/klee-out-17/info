@@ -1,0 +1,22 @@
+klee data_structures_set_multi_proc_ground-1.bc
+PID: 4314
+Using monotonic steady clock with 1/1000000000s resolution
+Started: 2020-04-11 22:02:17
+BEGIN searcher description
+<InterleavedSearcher> containing 2 searchers:
+RandomPathSearcher
+WeightedRandomSearcher::CoveringNew
+</InterleavedSearcher>
+END searcher description
+Finished: 2020-04-11 23:21:16
+Elapsed: 01:18:59
+KLEE: done: explored paths = 115975
+KLEE: done: avg. constructs per query = 162
+KLEE: done: total queries = 231141
+KLEE: done: valid queries = 115166
+KLEE: done: invalid queries = 115975
+KLEE: done: query cex = 231141
+
+KLEE: done: total instructions = 28362496
+KLEE: done: completed paths = 115975
+KLEE: done: generated tests = 2

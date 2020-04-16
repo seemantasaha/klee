@@ -1,5 +1,0 @@
-KLEE: Using Z3 solver backend
-KLEE: ERROR: Regexp.c:25: memory error: out of bound pointer
-KLEE: NOTE: now ignoring this error at this location
-KLEE: ERROR: Regexp.c:23: memory error: out of bound pointer
-KLEE: NOTE: now ignoring this error at this location

@@ -131,7 +131,7 @@ std::string translate_constraint(std::string constraint){
     std::string line = constraint.substr(begin, found-begin);
     if (line == "" || line[0] == ';'){
       result+=line;
-      result+="\n";
+      //result+="\n";
       begin=found+1;
       found = constraint.find("\n", begin);
       continue;
@@ -142,7 +142,7 @@ std::string translate_constraint(std::string constraint){
       result+=translated_formula_vector[i];
       result+=" ";
     }
-    result+="\n";
+    //result+="\n";
     begin=found+1;
     found = constraint.find("\n", begin);
   }
@@ -185,7 +185,9 @@ void QueryLoggingSolver::flushBufferConditionally(bool writeToFile) {
     std::string translated_constraint = translate_constraint(constraint);
     std::cout<<translated_constraint;
     
-    std::istringstream str(translated_constraint);
+    std::string hardcodedconstraint = "(declare-fun s () String)(assert (in s /(a|b)*/))(check-sat)";
+    std::istringstream str(hardcodedconstraint);
+    //std::istringstream str(translated_constraint);
  
     // handle for abc
     Vlab::Driver driver;

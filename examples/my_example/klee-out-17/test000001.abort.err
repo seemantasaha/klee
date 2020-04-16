@@ -1,0 +1,7 @@
+Error: abort failure
+File: data_structures_set_multi_proc_ground-1.c
+Line: 4
+assembly.ll line: 24
+Stack: 
+	#000000024 in __VERIFIER_assert () at data_structures_set_multi_proc_ground-1.c:4
+	#100000301 in main () at data_structures_set_multi_proc_ground-1.c:68
