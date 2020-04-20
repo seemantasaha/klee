@@ -451,6 +451,14 @@ void StatsTracker::writeStatsHeader() {
              << "ForkTime INTEGER,"
              << "ResolveTime INTEGER,"
              << "QueryCexCacheMisses INTEGER,"
+             << "IntQueries INTEGER,"
+             << "NonIntQueries INTEGER,"
+             << "ShiftFails INTEGER,"
+             << "ExtractFails INTEGER,"
+             << "XorFails INTEGER,"
+             << "BitWiseFails INTEGER,"
+             << "ReadLSBFails INTEGER,"
+             << "CrosscheckMissmatch INTEGER,"
 #ifdef KLEE_ARRAY_DEBUG
 	           << "ArrayHashTime INTEGER,"
 #endif
@@ -487,11 +495,27 @@ void StatsTracker::writeStatsHeader() {
              << "ForkTime ,"
              << "ResolveTime ,"
              << "QueryCexCacheMisses ,"
+             << "IntQueries ,"
+             << "NonIntQueries ,"
+             << "ShiftFails ,"
+             << "ExtractFails ,"
+             << "XorFails ,"
+             << "BitWiseFails ,"
+             << "ReadLSBFails ,"
+             << "CrosscheckMissmatch ,"
 #ifdef KLEE_ARRAY_DEBUG
              << "ArrayHashTime,"
 #endif
              << "QueryCexCacheHits "
              << ") VALUES ( "
+             << "?, "
+             << "?, "
+             << "?, "
+             << "?, "
+             << "?, "
+             << "?, "
+             << "?, "
+             << "?, "
              << "?, "
              << "?, "
              << "?, "
@@ -547,8 +571,16 @@ void StatsTracker::writeStatsLine() {
   sqlite3_bind_int64(insertStmt, 18, stats::resolveTime);
   sqlite3_bind_int64(insertStmt, 19, stats::queryCexCacheMisses);
   sqlite3_bind_int64(insertStmt, 20, stats::queryCexCacheHits);
+  sqlite3_bind_int64(insertStmt, 21, stats::intQueries);
+  sqlite3_bind_int64(insertStmt, 22, stats::nonintQueries);
+  sqlite3_bind_int64(insertStmt, 23, stats::shiftFail);
+  sqlite3_bind_int64(insertStmt, 24, stats::extractFail);
+  sqlite3_bind_int64(insertStmt, 25, stats::xorFail);
+  sqlite3_bind_int64(insertStmt, 26, stats::bitwiseLogicFail);
+  sqlite3_bind_int64(insertStmt, 27, stats::readLSBMissMatchFail);
+  sqlite3_bind_int64(insertStmt, 28, stats::crosscheckMissmatch);
 #ifdef KLEE_ARRAY_DEBUG
-  sqlite3_bind_int64(insertStmt, 21, stats::arrayHashTime);
+  sqlite3_bind_int64(insertStmt, 29, stats::arrayHashTime);
 #endif
   int errCode = sqlite3_step(insertStmt);
   if(errCode != SQLITE_DONE) klee_error("Error writing stats data: %s", sqlite3_errmsg(statsFile));

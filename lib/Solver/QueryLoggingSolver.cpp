@@ -14,6 +14,8 @@
 #include "klee/Internal/System/Time.h"
 #include "klee/OptionCategories.h"
 #include "klee/Statistics.h"
+#include "klee/Expr/ExprUtil.h"
+#include "klee/Expr/Constraints.h"
 #include <iostream>
 #include <string>
 #include <vector>
@@ -26,6 +28,10 @@ llvm::cl::opt<bool> DumpPartialQueryiesEarly(
     llvm::cl::desc("Log queries before calling the solver (default=false)"),
     llvm::cl::cat(klee::SolvingCat));
 
+llvm::cl::opt<bool> countQueryConstructs(
+    "count-constructs", llvm::cl::init(false),
+    llvm::cl::desc("Count the constructs in queries"));
+
 #ifdef HAVE_ZLIB_H
 llvm::cl::opt<bool> CreateCompressedQueryLog(
     "compress-query-log", llvm::cl::init(false),
@@ -33,6 +39,50 @@ llvm::cl::opt<bool> CreateCompressedQueryLog(
     llvm::cl::cat(klee::SolvingCat));
 #endif
 } // namespace
+
+#define visitX(X, var) Action visit##X (const X ## Expr& e) override { \
+  var++; \
+  return Action::doChildren(); \
+}
+
+class CountConstructs : public ExprVisitor {
+  int andExpr=0, orExpr=0, notExpr=0, addExpr=0, subExpr=0, divExpr=0, remExpr=0, eqExpr=0, ltExpr=0, leExpr=0;
+  protected:
+    Action visitRead(const ReadExpr& re) override {  
+        return Action::skipChildren();
+    }
+    Action visitConcat (const ConcatExpr& e) override {
+       return Action::skipChildren();
+    }
+
+    visitX(And, andExpr)
+    visitX(Or, orExpr)
+    visitX(Not, notExpr)
+    visitX(Add, addExpr)
+    visitX(Sub, subExpr)
+    visitX(UDiv, divExpr)
+    visitX(SDiv, divExpr)
+    visitX(SRem, remExpr)
+    visitX(URem, remExpr)
+    visitX(Eq, eqExpr)
+    visitX(Ult, ltExpr)
+    visitX(Slt, ltExpr)
+    visitX(Ule, leExpr)
+    visitX(Sle, leExpr)
+
+    CountConstructs() {}
+  public:
+    static bool countConstructs(const Query& q, llvm::raw_string_ostream& logB) {
+
+        CountConstructs cc;
+        cc.visit(q.expr);
+        for(auto &e : q.constraints) {
+            cc.visit(e);
+        }
+        logB << cc.andExpr << " " << cc.orExpr << " " << cc.notExpr << " " << cc.addExpr << " " << cc.subExpr << " " << cc.divExpr << " " << cc.remExpr << " " << cc.eqExpr << " " << cc.ltExpr << " " << cc.leExpr;
+        return true;
+    }
+};
 
 std::vector<std::string> convert_formula_to_vector(std::string formula){
   std::string word = "";
@@ -321,6 +371,35 @@ bool QueryLoggingSolver::computeValue(const Query &query, ref<Expr> &result) {
   return success;
 }
 
+extern bool wasIntQuery;
+
+bool isEqQuery(ref<Expr> e) {
+    EqExpr* eq = dyn_cast<EqExpr>(e);
+    if(eq == nullptr) return false;
+    ConstantExpr* ce = dyn_cast<ConstantExpr>(eq->left);
+    if(ce == nullptr) return true; //Top level eq
+
+    if(ce->getWidth() == Expr::Bool && ce->getZExtValue() == 0) return isEqQuery(eq->right);
+    else return true;
+
+
+}
+
+bool isIeqQuery(ref<Expr> e) {
+    EqExpr* eq = dyn_cast<EqExpr>(e);
+    if(eq == nullptr) {
+        auto k = e->getKind();
+        return k == Expr::Ult || k == Expr::Ule || k == Expr::Slt || k == Expr::Sle;
+    }
+    ConstantExpr* ce = dyn_cast<ConstantExpr>(eq->left);
+    if(ce == nullptr) return false; //Top level eq
+
+    if(ce->getWidth() == Expr::Bool && ce->getZExtValue() == 0) return isIeqQuery(eq->right);
+    else return false;
+
+
+}
+
 bool QueryLoggingSolver::computeInitialValues(
     const Query &query, const std::vector<const Array *> &objects,
     std::vector<std::vector<unsigned char> > &values, bool &hasSolution) {
@@ -330,6 +409,25 @@ bool QueryLoggingSolver::computeInitialValues(
       solver->impl->computeInitialValues(query, objects, values, hasSolution);
 
   finishQuery(success);
+
+  if(countQueryConstructs) {
+      logBuffer << "#\t";
+      logBuffer << (wasIntQuery ? "int " : "noint ");
+      CountConstructs::countConstructs(query,logBuffer);
+      logBuffer << " " << lastQueryDuration << "\n";
+
+      int eqExpr=0, inEqExpr=0;
+      eqExpr += isEqQuery(query.expr) ? 1 : 0;
+      inEqExpr += isIeqQuery(query.expr) ? 1 : 0;
+      for(auto &e : query.constraints) {
+        eqExpr += isEqQuery(e) ? 1 : 0;
+        inEqExpr += isIeqQuery(e) ? 1 : 0;
+      }
+
+      logBuffer << "#\ttoplevel:";
+      logBuffer << (wasIntQuery ? "i " : "ni ");
+      logBuffer << eqExpr << " " << inEqExpr << " " << lastQueryDuration << "\n";
+  }
 
   if (success) {
     logBuffer << queryCommentSign

@@ -46,6 +46,7 @@ namespace klee {
 
   public:
     std::set<const Array *> results;
+    std::set<const Array *> symbolicArrays;
   };
 }
 

@@ -15,11 +15,17 @@
 #include "klee/Internal/Support/ErrorHandling.h"
 #include "klee/Internal/System/Time.h"
 #include "klee/Solver/SolverCmdLine.h"
-
+#include "../Solver/Z3IntSolver.h"
 #include "llvm/Support/raw_ostream.h"
+#include "llvm/Support/CommandLine.h"
 
 
 namespace klee {
+  llvm::cl::opt<bool>
+  IsInt("use-int-solver",
+          llvm::cl::init(false),
+          llvm::cl::desc("Try to use z3 int solver first (default=off)."));
+
 Solver *constructSolverChain(Solver *coreSolver,
                              std::string querySMT2LogPath,
                              std::string baseSolverQuerySMT2LogPath,
@@ -28,17 +34,28 @@ Solver *constructSolverChain(Solver *coreSolver,
   Solver *solver = coreSolver;
   const time::Span minQueryTimeToLog(MinQueryTimeToLog);
 
-  if (QueryLoggingOptions.isSet(SOLVER_KQUERY)) {
-    solver = createKQueryLoggingSolver(solver, baseSolverQueryKQueryLogPath, minQueryTimeToLog, LogTimedOutQueries);
-    klee_message("Logging queries that reach solver in .kquery format to %s\n",
-                 baseSolverQueryKQueryLogPath.c_str());
-  }
-
   if (QueryLoggingOptions.isSet(SOLVER_SMTLIB)) {
     solver = createSMTLIBLoggingSolver(solver, baseSolverQuerySMT2LogPath, minQueryTimeToLog, LogTimedOutQueries);
     klee_message("Logging queries that reach solver in .smt2 format to %s\n",
                  baseSolverQuerySMT2LogPath.c_str());
   }
+
+  if (IsInt){
+    solver = new Z3IntSolver(solver);
+    if (DebugCrossCheckZ3IntSolverWith != NO_SOLVER) {
+      Solver *oracleSolver = createCoreSolver(DebugCrossCheckZ3IntSolverWith);
+      solver = createValidatingSolver(/*s=*/solver, /*oracle=*/oracleSolver);
+    }
+  }
+
+if (QueryLoggingOptions.isSet(SOLVER_KQUERY)) {
+    solver = createKQueryLoggingSolver(solver, baseSolverQueryKQueryLogPath, minQueryTimeToLog, LogTimedOutQueries);
+    klee_message("Logging queries that reach solver in .kquery format to %s\n",
+                 baseSolverQueryKQueryLogPath.c_str());
+  }
+
+  if (DebugValidateSolver)
+    solver = createValidatingSolver(solver, coreSolver);
 
   if (UseAssignmentValidatingSolver)
     solver = createAssignmentValidatingSolver(solver);

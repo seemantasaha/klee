@@ -7,12 +7,12 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef __UTIL_Z3INTBUILDER_H__
-#define __UTIL_Z3INTBUILDER_H__
+#ifndef KLEE_Z3INTBUILDER_H
+#define KLEE_Z3INTBUILDER_H
 
 #include "klee/Config/config.h"
-#include "klee/util/ArrayExprHash.h"
-#include "klee/util/ExprHashMap.h"
+#include "klee/Expr/ArrayExprHash.h"
+#include "klee/Expr/ExprHashMap.h"
 #include <unordered_map>
 #include <z3.h>
 

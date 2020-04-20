@@ -10,7 +10,7 @@
 #include "klee/Expr/Constraints.h"
 #include "klee/Solver/Solver.h"
 #include "klee/Solver/SolverImpl.h"
-
+#include "klee/Solver/SolverStats.h"
 #include <vector>
 
 namespace klee {
@@ -45,7 +45,8 @@ bool ValidatingSolver::computeTruth(const Query &query, bool &isValid) {
     return false;
 
   if (isValid != answer)
-    assert(0 && "invalid solver result (computeTruth)");
+    ++stats::crosscheckMissmatch;
+    //assert(0 && "invalid solver result (computeTruth)");
 
   return true;
 }
@@ -60,7 +61,8 @@ bool ValidatingSolver::computeValidity(const Query &query,
     return false;
 
   if (result != answer)
-    assert(0 && "invalid solver result (computeValidity)");
+    ++stats::crosscheckMissmatch;
+    //assert(0 && "invalid solver result (computeValidity)");
 
   return true;
 }
@@ -77,7 +79,8 @@ bool ValidatingSolver::computeValue(const Query &query, ref<Expr> &result) {
     return false;
 
   if (answer)
-    assert(0 && "invalid solver result (computeValue)");
+    ++stats::crosscheckMissmatch;
+    //assert(0 && "invalid solver result (computeValue)");
 
   return true;
 }
@@ -115,14 +118,20 @@ bool ValidatingSolver::computeInitialValues(
     if (!oracle->impl->computeTruth(Query(tmp, constraints), answer))
       return false;
     if (!answer)
-      assert(0 && "invalid solver result (computeInitialValues)");
+      ++stats::crosscheckMissmatch;
+      //assert(0 && "invalid solver result (computeInitialValues)");
   } else {
     if (!oracle->impl->computeTruth(query, answer))
       return false;
     if (!answer)
-      assert(0 && "invalid solver result (computeInitialValues)");
+      ++stats::crosscheckMissmatch;
+      //assert(0 && "invalid solver result (computeInitialValues)");
   }
 
+  if(!answer) {
+    if (!oracle->impl->computeInitialValues(query, objects, values, hasSolution))
+     return false;
+  }
   return true;
 }
 

@@ -12,11 +12,11 @@
 #ifdef ENABLE_Z3
 #include "Z3IntSolver.h"
 #include "Z3IntBuilder.h"
-#include "klee/Constraints.h"
-#include "klee/Solver.h"
-#include "klee/SolverImpl.h"
-#include "klee/util/Assignment.h"
-#include "klee/util/ExprUtil.h"
+#include "klee/Expr/Constraints.h"
+#include "klee/Expr/Assignment.h"
+#include "klee/Expr/ExprUtil.h"
+#include "klee/Solver/Solver.h"
+#include "klee/Solver/SolverImpl.h"
 #include "llvm/Support/CommandLine.h"
 #include "llvm/Support/raw_ostream.h"
 
@@ -87,7 +87,9 @@ class IsIntExpr : public ExprVisitor {
           ++stats::readLSBMissMatchFail;
           return no();
       }
-      return visitRead(*re);
+      visit(re->index);
+      if(!isIntExpr) return no();
+      return Action::skipChildren();
     }
  
     Action visitAnd(const AndExpr& e) override { 

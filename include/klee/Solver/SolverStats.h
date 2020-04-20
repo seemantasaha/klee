@@ -28,6 +28,16 @@ namespace stats {
   extern Statistic queryCounterexamples;
   extern Statistic queryTime;
   
+  extern Statistic intQueries;
+  extern Statistic nonintQueries;
+
+  extern Statistic shiftFail;
+  extern Statistic extractFail;
+  extern Statistic xorFail;
+  extern Statistic bitwiseLogicFail;
+  extern Statistic readLSBMissMatchFail;
+  extern Statistic crosscheckMissmatch;
+  
 #ifdef KLEE_ARRAY_DEBUG
   extern Statistic arrayHashTime;
 #endif

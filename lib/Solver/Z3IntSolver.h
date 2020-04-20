@@ -11,7 +11,7 @@
 #ifndef KLEE_Z3INTSOLVER_H
 #define KLEE_Z3INTSOLVER_H
 
-#include "klee/Solver.h"
+#include "klee/Solver/Solver.h"
 
 namespace klee {
 /// Z3IntSolver - A partial int solver based on Z3

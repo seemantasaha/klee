@@ -492,6 +492,8 @@ public:
   /// Range is the size (in bits) of the number stored there (array of bytes -> 8)
   const Expr::Width domain, range;
 
+  Expr::Width valueType = Expr::InvalidWidth;
+
   /// constantValues - The constant initial values for this array, or empty for
   /// a symbolic array. If non-empty, this size of this array is equivalent to
   /// the array size.
@@ -565,6 +567,7 @@ private:
 
 /// Class representing a one byte read from an array. 
 class ReadExpr : public NonConstantExpr {
+  unsigned width = 0;
 public:
   static const Kind kind = Read;
   static const unsigned numKids = 1;
@@ -582,7 +585,8 @@ public:
   
   static ref<Expr> create(const UpdateList &updates, ref<Expr> i);
   
-  Width getWidth() const { assert(updates.root); return updates.root->getRange(); }
+  Width getWidth() const { assert(updates.root); return width == 0 ? updates.root->getRange() : width; }
+  void setWidth(unsigned w) { width = w;}
   Kind getKind() const { return Read; }
   
   unsigned getNumKids() const { return numKids; }

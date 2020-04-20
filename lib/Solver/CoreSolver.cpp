@@ -9,6 +9,7 @@
 
 #include "STPSolver.h"
 #include "Z3Solver.h"
+#include "Z3IntSolver.h"
 #include "MetaSMTSolver.h"
 
 #include "klee/Solver/SolverCmdLine.h"

@@ -13,7 +13,7 @@
 #include "klee/Internal/Support/ErrorHandling.h"
 
 #include "llvm/Support/FileSystem.h"
-
+#include <iostream>
 #ifdef HAVE_ZLIB_H
 #include "klee/Internal/Support/CompressionStream.h"
 #endif
@@ -26,8 +26,10 @@ klee_open_output_file(const std::string &path, std::string &error) {
   std::unique_ptr<llvm::raw_fd_ostream> f;
   std::error_code ec;
   f = std::unique_ptr<llvm::raw_fd_ostream>(new llvm::raw_fd_ostream(path.c_str(), ec, llvm::sys::fs::F_None)); // FIXME C++14
-  if (ec)
+  if (ec){
     error = ec.message();
+    std::cout<<error<<std::endl;
+  }
   if (!error.empty()) {
     f.reset(nullptr);
   }
