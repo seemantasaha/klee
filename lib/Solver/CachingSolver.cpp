@@ -93,7 +93,12 @@ public:
   SolverRunStatus getOperationStatusCode();
   char *getConstraintLog(const Query&);
   void setCoreSolverTimeout(time::Span timeout);
+  int getVarWidth(const Query& query);
 };
+
+int CachingSolver::getVarWidth(const Query& query){
+  return solver->impl->getVarWidth(query);
+}
 
 /** @returns the canonical version of the given query.  The reference
     negationUsed is set to true if the original query was negated in

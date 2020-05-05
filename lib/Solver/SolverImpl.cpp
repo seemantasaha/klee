@@ -28,6 +28,10 @@ bool SolverImpl::computeValidity(const Query &query, Solver::Validity &result) {
   return true;
 }
 
+int SolverImpl::getVarWidth(const Query& query){
+  return 0;
+}
+
 const char *SolverImpl::getOperationStatusString(SolverRunStatus statusCode) {
   switch (statusCode) {
   case SOLVER_RUN_STATUS_SUCCESS_SOLVABLE:

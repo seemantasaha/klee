@@ -16,7 +16,7 @@
 
 #include "llvm/IR/Function.h"
 #include "llvm/Support/CommandLine.h"
-
+#include <iostream>
 #include <map>
 
 using namespace klee;
@@ -122,6 +122,12 @@ ref<Expr> ConstraintManager::simplifyExpr(ref<Expr> e) const {
   }
 
   return ExprReplaceVisitor2(equalities).visit(e);
+}
+
+
+void ConstraintManager::replace_constraints(std::vector<ref<Expr>> v){
+  constraints = v;
+  std::cout<<"New size: "<<constraints.size();
 }
 
 void ConstraintManager::addConstraintInternal(ref<Expr> e) {

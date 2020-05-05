@@ -50,6 +50,7 @@
 #include "klee/Solver/SolverStats.h"
 #include "klee/TimerStatIncrementer.h"
 #include "klee/util/GetElementPtrTypeIterator.h"
+#include "klee/Solver/Solver.h"
 
 #include "llvm/ADT/SmallPtrSet.h"
 #include "llvm/ADT/StringExtras.h"
@@ -81,6 +82,9 @@
 #include <string>
 #include <sys/mman.h>
 #include <vector>
+#include <iostream>
+#include <set>
+#include <abc/Driver.h>
 
 using namespace llvm;
 using namespace klee;
@@ -3843,6 +3847,224 @@ unsigned Executor::getSymbolicPathStreamID(const ExecutionState &state) {
   return state.symPathOS.getID();
 }
 
+std::string remove_let_binding(std::string constraint){
+  //std::cout<<"Constraint. "<<constraint<<std::endl;
+  std::size_t pos = constraint.find("let");
+  if (pos == std::string::npos){
+    return constraint;
+  }
+  std::size_t left_paren_pos = constraint.rfind("(", pos);
+  if (left_paren_pos == std::string::npos){
+    //std::cout<<"Something is wrong (left paren)\n";
+    return constraint;
+  }
+  std::size_t right_paren_pos = constraint.length();
+  for (std::size_t i = left_paren_pos + 1, acc = 1; i < constraint.length(); i++){
+    if (constraint[i] == '('){
+      acc+=1;
+    }
+    if (constraint[i] == ')'){
+      acc-=1;
+      if (acc == 0){
+        right_paren_pos = i;
+        break;
+      }
+    }
+  }
+  if (right_paren_pos == constraint.length()){
+    //std::cout<<"Something is wrong (right paren)\n";
+    return constraint;
+  }
+  std::size_t binding_begin = constraint.find("(", pos+1);
+  std::size_t binding_end = constraint.length();
+  for (std::size_t i = binding_begin + 1, acc = 1; i < right_paren_pos; i++){
+    if (constraint[i] == '('){
+      acc+=1;
+    }
+    if (constraint[i] == ')'){
+      acc-=1;
+      if (acc == 0){
+        binding_end = i;
+        break;
+      }
+    }
+  }
+
+  std::size_t first_binding_begin = constraint.find("(", binding_begin+1);
+  std::size_t first_binding_end = constraint.rfind(")", binding_end-1);
+  std::size_t var_begin = first_binding_begin + 1;
+  std::size_t var_end = constraint.find(" ", var_begin);
+  std::string var_name = constraint.substr(var_begin, var_end-var_begin);
+  //std::cout<<"Printing variable name: "<< var_name<<std::endl;
+  std::size_t expr_begin = constraint.find_first_not_of(" ", var_end+1);
+  std::size_t expr_end = first_binding_end;
+  for (std::size_t i = expr_begin, acc = 0; i < first_binding_end; i++){
+    if (constraint[i] == '('){
+      acc+=1;
+    }
+    if (constraint[i] == ')'){
+      acc-=1;
+    }
+    if (acc == 0 && (constraint[i+1] == ')' || constraint[i+1] == ' ' || constraint[i+1] == '\n')){
+      expr_end = i;
+      break;
+    }
+  }
+  std::string expression = constraint.substr(expr_begin, expr_end - expr_begin + 1);
+  //std::cout<<"Printing expression: "<< expression <<std::endl;
+  //std::cout<<"Constraint before: "<<constraint<<std::endl;
+  constraint.erase(right_paren_pos,1);
+  constraint.erase(left_paren_pos, binding_end - left_paren_pos + 1);
+  //std::cout<<"Constraint after: "<<constraint<<std::endl;
+  right_paren_pos -= 1 + binding_end - left_paren_pos + 1;
+  size_t var_pos = constraint.find(var_name, left_paren_pos);
+  while (var_pos != std::string::npos && var_pos <= right_paren_pos){
+    char char_before = constraint[var_pos - 1];
+    char char_after = constraint[var_pos + var_name.length()];
+    if ((char_before == '(' || char_before == ')' || char_before == ' ') && (char_after == '(' || char_after == ')' || char_after == ' ')){
+      constraint.replace(var_pos, var_name.length(), expression);
+      int len_diff = expression.length() - var_name.length();
+      right_paren_pos += len_diff;
+      var_pos += expression.length();
+      var_pos = constraint.find(var_name, var_pos);
+    }
+    else{
+      var_pos = constraint.find(var_name, var_pos + 1);
+    }  
+  }
+  //std::cout<<"Constraint? "<<constraint<<std::endl;
+  //std::cout<<"var_name? "<<var_name<<std::endl;
+  //std::cout<<"left_paren_pos? "<<left_paren_pos<<std::endl;
+  //while(var_pos = constraint.find(var_name, var_pos) != std::string::npos){
+  //  std::cout<<"HERE???\n";
+  //  constraint.replace(var_pos, var_name.length(), expression);
+  //  std::cout<<"Constraint! "<<constraint<<std::endl;
+  //  var_pos += expression.length();
+  //}
+  //std::cout<<"Printing constraint: "<<constraint<<std::endl;
+  return remove_let_binding(constraint);
+}
+
+std::string remove_array_definition(std::string constraint, std::set<std::string> var_name_set){
+  //TODO: More robust
+  std::size_t pos = constraint.find("select");
+  if (pos == std::string::npos){
+    std::size_t declare_pos = 0;
+    while(declare_pos < constraint.length()){
+      declare_pos = constraint.find("declare-fun");
+      if (declare_pos == std::string::npos){
+        declare_pos = constraint.find("set-info");
+        if (declare_pos == std::string::npos){
+          declare_pos = constraint.find(";");
+          if (declare_pos == std::string::npos){
+            break;
+          } else{
+            for (std::size_t i = declare_pos; i < constraint.length(); i++){
+              if (constraint[i] == '\n'){
+                constraint.erase(declare_pos, i - declare_pos + 1);
+                break;
+              }
+            }
+            continue;
+          }
+        }
+      }
+      std::size_t declare_left_paren_pos = constraint.rfind("(", declare_pos);
+      if (declare_left_paren_pos == std::string::npos){
+        //std::cout<<"Something is wrong (left paren)\n";
+        return constraint;
+      }
+      std::size_t declare_right_paren_pos = constraint.length();
+      for (std::size_t i = declare_left_paren_pos + 1, acc = 1; i < constraint.length(); i++){
+        if (constraint[i] == '('){
+          acc+=1;
+        }
+        if (constraint[i] == ')'){
+          acc-=1;
+          if (acc == 0){
+            declare_right_paren_pos = i;
+            break;
+          }
+        }
+      }
+      
+      if (declare_right_paren_pos == constraint.length()){
+        //std::cout<<"Something is wrong (right paren)\n";
+        return constraint;
+      }
+      constraint.erase(declare_left_paren_pos, declare_right_paren_pos - declare_left_paren_pos + 1);
+    }
+
+    for (std::set<std::string>::iterator it=var_name_set.begin(); it!=var_name_set.end(); ++it){
+      constraint.insert(0, "(declare-fun " + *it + " () " + "Int)");
+    }
+
+    for (std::size_t i = 0; i < constraint.length(); i++){
+      if (constraint[i] == '\n'){
+        constraint[i] = ' ';
+      }
+    }
+    return constraint;
+  }
+  std::size_t left_paren_pos = constraint.rfind("(", pos);
+  if (left_paren_pos == std::string::npos){
+    //std::cout<<"Something is wrong (left paren)\n";
+    return constraint;
+  }
+  std::size_t right_paren_pos = constraint.length();
+  for (std::size_t i = left_paren_pos + 1, acc = 1; i < constraint.length(); i++){
+    if (constraint[i] == '('){
+      acc+=1;
+    }
+    if (constraint[i] == ')'){
+      acc-=1;
+      if (acc == 0){
+        right_paren_pos = i;
+        break;
+      }
+    }
+  }
+
+  if (right_paren_pos == constraint.length()){
+    //std::cout<<"Something is wrong (right paren)\n";
+    return constraint;
+  }
+
+  std::string arr_name = "";
+  std::size_t arr_name_end_pos = 0;
+  for (std::size_t i = pos + 6; i < constraint.length(); i++){
+    if (constraint[i] == ' '){
+      if (arr_name != ""){
+        arr_name_end_pos = i;
+        break;
+      } else{
+        continue;
+      }
+    } else{
+      arr_name+=constraint[i];
+    }
+  }
+  std::string index = "";
+  for (std::size_t i = arr_name_end_pos; i < constraint.length(); i++){
+    if (constraint[i] == ' '){
+      if (index != ""){
+        break;
+      } else{
+        continue;
+      }
+    } else if (constraint[i] == ')'){
+      break;
+    } else{
+      //std::cout<<"HERE\n";
+      index+=constraint[i];
+    }
+  }
+  std::string new_var = arr_name + "m" + index;
+  var_name_set.insert(new_var);
+  constraint.replace(left_paren_pos, right_paren_pos-left_paren_pos+1, new_var);
+  return remove_array_definition(constraint, var_name_set);
+}
+
 void Executor::getConstraintLog(const ExecutionState &state, std::string &res,
                                 Interpreter::LogType logFormat) {
 
@@ -3862,14 +4084,58 @@ void Executor::getConstraintLog(const ExecutionState &state, std::string &res,
   } break;
 
   case SMTLIB2: {
-    std::string Str;
-    llvm::raw_string_ostream info(Str);
-    ExprSMTLIBPrinter printer;
-    printer.setOutput(info);
+    //std::string Str;
+    //llvm::raw_string_ostream info(Str);
+    //ExprSMTLIBPrinter printer;
+    //printer.setOutput(info);
+    //Query query(state.constraints, ConstantExpr::alloc(0, Expr::Bool));
+    //printer.setQuery(query);
+    //printer.generateOutput();
+    //res = info.str();
     Query query(state.constraints, ConstantExpr::alloc(0, Expr::Bool));
-    printer.setQuery(query);
-    printer.generateOutput();
-    res = info.str();
+    
+    // We negate the Query Expr because in KLEE queries are solved
+    // in terms of validity, but SMT-LIB works in terms of satisfiability
+    ref<Expr> queryAssert = Expr::createIsZero(query.expr);
+
+    // Print constraints inside the main query to reuse the Expr bindings
+    for (std::vector<ref<Expr> >::const_iterator i = query.constraints.begin(),
+                                               e = query.constraints.end();
+        i != e; ++i) {
+      queryAssert = AndExpr::create(queryAssert, *i);
+    }
+    std::vector<ref<Expr> > new_constraints = {queryAssert};
+    ExecutionState tmp_state = state;
+    tmp_state.constraints.replace_constraints(new_constraints);
+    //std::cout<<"EHERE\n";
+    Query tmp_query(tmp_state.constraints, ConstantExpr::alloc(0, Expr::Bool));
+    char *log = solver->getConstraintLog(tmp_query);
+    //std::cout<<"Printing width: "<<solver->getVarWidth(query)<<"\n";
+    res = std::string(log);
+    std::cout<<"Prinitng original pc: "<< res<<std::endl;
+    res = remove_let_binding(res);
+    std::set<std::string> var_name_set;
+    res = remove_array_definition(res, var_name_set);
+    std::cout<<"Printing translated pc: "<<res<<std::endl;
+    //std::cout<<res<<std::endl;
+    std::string hardcodedconstraint = res;
+    std::istringstream str(hardcodedconstraint);
+    Vlab::Driver driver;
+    driver.InitializeLogger(0);
+    driver.set_option(Vlab::Option::Name::REGEX_FLAG, 0x000f);
+    driver.Parse(&str);
+    driver.InitializeSolver();
+    driver.Solve();
+    bool result = driver.is_sat();
+    std::cout << result << std::endl;
+    Vlab::Theory::BigInteger count = driver.CountInts(solver->getVarWidth(query));
+    std::cout << count << " solutions" << std::endl;
+    driver.reset();
+    std::cout<< "Try cost" << state.steppedInstructions<<std::endl;
+
+
+    //os->flush();
+    free(log);
   } break;
 
   default:

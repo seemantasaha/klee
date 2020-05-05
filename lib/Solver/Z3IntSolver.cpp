@@ -143,7 +143,7 @@ private:
   ::Z3_params solverParameters;
   // Parameter symbols
   ::Z3_symbol timeoutParamStrSymbol;
-
+  //int width = 0;
   bool internalRunSolver(const Query &,
                          const std::vector<const Array *> *objects,
                          std::vector<std::vector<unsigned char> > *values,
@@ -165,6 +165,7 @@ public:
                        timeoutInMilliSeconds);
   }
 
+  int getVarWidth(const Query& query);
   bool computeTruth(const Query &, bool &isValid);
   bool computeValue(const Query &, ref<Expr> &result);
   bool computeInitialValues(const Query &,
@@ -217,6 +218,11 @@ Z3IntSolverImpl::~Z3IntSolverImpl() {
   delete builder;
 }
 
+
+int Z3IntSolverImpl::getVarWidth(const Query& query){
+  return builder->width;
+}
+
 Z3IntSolver::Z3IntSolver(Solver *s) : Solver(new Z3IntSolverImpl(s)), coreSolver(s) {}
 
 char *Z3IntSolver::getConstraintLog(const Query &query) {
@@ -227,6 +233,9 @@ void Z3IntSolver::setCoreSolverTimeout(time::Span timeout) {
   impl->setCoreSolverTimeout(timeout);
 }
 
+int Z3IntSolver::getVarWidth(const Query &query){
+    return impl->getVarWidth(query);
+}
 char *Z3IntSolverImpl::getConstraintLog(const Query &query) {
   std::vector<Z3ASTHandle> assumptions;
   // We use a different builder here because we don't want to interfere
@@ -279,9 +288,9 @@ char *Z3IntSolverImpl::getConstraintLog(const Query &query) {
 
   ::Z3_string result = Z3_benchmark_to_smtlib_string(
       temp_builder.ctx,
-      /*name=*/"Emited by klee::Z3IntSolverImpl::getConstraintLog()",
+      /*name=*/"",
       /*logic=*/"",
-      /*status=*/"unknown",
+      /*status=*/"",
       /*attributes=*/"",
       /*num_assumptions=*/numAssumptions,
       /*assumptions=*/assumptionsArray,

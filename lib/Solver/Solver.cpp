@@ -30,6 +30,10 @@ char *Solver::getConstraintLog(const Query& query) {
     return impl->getConstraintLog(query);
 }
 
+int Solver::getVarWidth(const Query& query){
+  return impl->getVarWidth(query);
+}
+
 void Solver::setCoreSolverTimeout(time::Span timeout) {
     impl->setCoreSolverTimeout(timeout);
 }

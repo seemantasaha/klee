@@ -72,6 +72,7 @@ public:
   SolverRunStatus getOperationStatusCode();
   char *getConstraintLog(const Query &);
   void setCoreSolverTimeout(time::Span timeout);
+  int getVarWidth(const Query& query);
 };
 
 #endif /* KLEE_QUERYLOGGINGSOLVER_H */

@@ -409,8 +409,12 @@ public:
   SolverRunStatus getOperationStatusCode();
   char *getConstraintLog(const Query&);
   void setCoreSolverTimeout(time::Span timeout);
+  int getVarWidth(const Query& query);
 };
   
+int IndependentSolver::getVarWidth(const Query& query){
+  return solver->impl->getVarWidth(query);
+}
 bool IndependentSolver::computeValidity(const Query& query,
                                         Solver::Validity &result) {
   std::vector< ref<Expr> > required;

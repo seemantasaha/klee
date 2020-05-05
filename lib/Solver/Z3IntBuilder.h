@@ -144,6 +144,7 @@ private:
 public:
   static const ReadExpr* hasOrderedReads(const Expr* e, int stride, int&);
   Z3_context ctx;
+  int width;
   std::unordered_map<const Array *, std::vector<Z3ASTHandle> >
       constant_array_assertions;
   Z3IntBuilder(bool autoClearConstructCache, const char *z3LogInteractionFile);

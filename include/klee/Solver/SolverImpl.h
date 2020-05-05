@@ -40,6 +40,8 @@ namespace klee {
                            SOLVER_RUN_STATUS_UNEXPECTED_EXIT_CODE,
                            SOLVER_RUN_STATUS_WAITPID_FAILED };
 
+    virtual int getVarWidth(const Query& query);
+
     /// computeValidity - Compute a full validity result for the
     /// query.
     ///

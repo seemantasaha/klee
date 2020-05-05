@@ -44,6 +44,8 @@ public:
 
   void addConstraint(ref<Expr> e);
 
+  void replace_constraints(std::vector<ref<Expr>> v);
+
   bool empty() const noexcept { return constraints.empty(); }
   ref<Expr> back() const { return constraints.back(); }
   const_iterator begin() const { return constraints.cbegin(); }

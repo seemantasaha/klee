@@ -34,8 +34,12 @@ public:
   SolverRunStatus getOperationStatusCode();
   char *getConstraintLog(const Query &);
   void setCoreSolverTimeout(time::Span timeout);
+  int getVarWidth(const Query &);
 };
 
+int ValidatingSolver::getVarWidth(const Query & query){
+  return solver->impl->getVarWidth(query);
+}
 bool ValidatingSolver::computeTruth(const Query &query, bool &isValid) {
   bool answer;
 

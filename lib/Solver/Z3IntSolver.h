@@ -21,6 +21,7 @@ public:
   /// Z3IntSolver - Construct a new Z3IntSolver.
   Z3IntSolver(Solver* s);
 
+  virtual int getVarWidth(const Query &);
   /// Get the query in SMT-LIBv2 format.
   /// \return A C-style string. The caller is responsible for freeing this.
   virtual char *getConstraintLog(const Query &);

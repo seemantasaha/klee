@@ -64,6 +64,8 @@ namespace klee {
                           const std::vector<const Array*> &objects,
                           std::vector< std::vector<unsigned char> > &result);
 
+    int getVarWidth(const Query& query);
+
     std::pair< ref<Expr>, ref<Expr> >
     getRange(const ExecutionState&, ref<Expr> query);
   };

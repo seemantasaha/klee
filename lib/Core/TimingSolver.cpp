@@ -42,6 +42,11 @@ bool TimingSolver::evaluate(const ExecutionState& state, ref<Expr> expr,
   return success;
 }
 
+int TimingSolver::getVarWidth(const Query& query){
+  return solver->getVarWidth(query);
+}
+
+
 bool TimingSolver::mustBeTrue(const ExecutionState& state, ref<Expr> expr, 
                               bool &result) {
   // Fast path, to avoid timer and OS overhead.

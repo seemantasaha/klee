@@ -211,25 +211,26 @@ Z3ASTHandle Z3IntBuilder::getInitialArray(const Array *root) {
       std::vector<Z3ASTHandle> array_assertions;
 
       unsigned byteStride = root->valueType / 8;
+      width = root->valueType;
 //      llvm::errs() << root->name << ":" << root->valueType << "\n";
       for (unsigned i = 0, e = (root->size / byteStride); i != e; ++i) {
         auto rExpr = readExpr(array_expr, uIntConst(i)); 
         switch(byteStride) {
             case 1: 
-                  array_assertions.push_back(leExpr(rExpr,sIntConst(std::numeric_limits<std::int8_t>::max())));
-                  array_assertions.push_back(geExpr(rExpr,sIntConst(std::numeric_limits<std::int8_t>::min())));
+                  //array_assertions.push_back(leExpr(rExpr,sIntConst(std::numeric_limits<std::int8_t>::max())));
+                  //array_assertions.push_back(geExpr(rExpr,sIntConst(std::numeric_limits<std::int8_t>::min())));
                   break;
             case 2:
-                  array_assertions.push_back(leExpr(rExpr,sIntConst(std::numeric_limits<std::int16_t>::max())));
-                  array_assertions.push_back(geExpr(rExpr,sIntConst(std::numeric_limits<std::int16_t>::min())));
+                  //array_assertions.push_back(leExpr(rExpr,sIntConst(std::numeric_limits<std::int16_t>::max())));
+                  //array_assertions.push_back(geExpr(rExpr,sIntConst(std::numeric_limits<std::int16_t>::min())));
                   break;
             case 4: 
-                  array_assertions.push_back(leExpr(rExpr,sIntConst(std::numeric_limits<std::int32_t>::max())));
-                  array_assertions.push_back(geExpr(rExpr,sIntConst(std::numeric_limits<std::int32_t>::min())));
+                  //array_assertions.push_back(leExpr(rExpr,sIntConst(std::numeric_limits<std::int32_t>::max())));
+                  //array_assertions.push_back(geExpr(rExpr,sIntConst(std::numeric_limits<std::int32_t>::min())));
                   break;
             case 8:
-                  array_assertions.push_back(leExpr(rExpr,sIntConst(std::numeric_limits<std::int64_t>::max())));
-                  array_assertions.push_back(geExpr(rExpr,sIntConst(std::numeric_limits<std::int64_t>::min())));
+                  //array_assertions.push_back(leExpr(rExpr,sIntConst(std::numeric_limits<std::int64_t>::max())));
+                  //array_assertions.push_back(geExpr(rExpr,sIntConst(std::numeric_limits<std::int64_t>::min())));
                   break;
             default: assert(0 && "Invalid byte stride");
         }

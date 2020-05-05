@@ -512,6 +512,9 @@ public:
 
   MergingSearcher *getMergingSearcher() const { return mergingSearcher; };
   void setMergingSearcher(MergingSearcher *ms) { mergingSearcher = ms; };
+
+  //std::string remove_let_binding(std::string constraint);
+  //std::string remove_array_definition(std::string constraint);
 };
   
 } // End klee namespace

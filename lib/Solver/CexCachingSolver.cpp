@@ -98,8 +98,13 @@ public:
   SolverRunStatus getOperationStatusCode();
   char *getConstraintLog(const Query& query);
   void setCoreSolverTimeout(time::Span timeout);
+  int getVarWidth(const Query& query);
 };
 
+
+int CexCachingSolver::getVarWidth(const Query& query){
+  return solver->impl->getVarWidth(query);
+}
 ///
 
 struct NullAssignment {

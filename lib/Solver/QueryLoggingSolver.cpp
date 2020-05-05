@@ -227,6 +227,9 @@ QueryLoggingSolver::~QueryLoggingSolver() {
   delete solver;
 }
 
+int QueryLoggingSolver::getVarWidth(const Query& query){
+  return solver->impl->getVarWidth(query);
+}
 void QueryLoggingSolver::flushBufferConditionally(bool writeToFile) {
   logBuffer.flush();
   if (writeToFile) {

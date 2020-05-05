@@ -72,6 +72,8 @@ namespace klee {
     Solver(SolverImpl *_impl) : impl(_impl) {}
     virtual ~Solver();
 
+    int getVarWidth(const Query&);
+
     /// evaluate - Determine for a particular state if the query
     /// expression is provably true, provably false or neither.
     ///
