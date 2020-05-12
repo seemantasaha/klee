@@ -47,6 +47,7 @@
 #include "klee/Interpreter.h"
 #include "klee/OptionCategories.h"
 #include "klee/Solver/SolverCmdLine.h"
+#include "../Solver/ConstructSolverChain.cpp"
 #include "klee/Solver/SolverStats.h"
 #include "klee/TimerStatIncrementer.h"
 #include "klee/util/GetElementPtrTypeIterator.h"
@@ -4004,6 +4005,13 @@ std::string remove_array_definition(std::string constraint, std::set<std::string
         constraint[i] = ' ';
       }
     }
+
+    for (std::size_t i = 0; i < constraint.length(); i++){
+      if ((constraint[i] == ' ') && (i != constraint.length() - 1) && (constraint[i+1] == ' ')){
+        constraint.erase(i, 1);
+        i--;
+      }
+    }
     return constraint;
   }
   std::size_t left_paren_pos = constraint.rfind("(", pos);
@@ -4092,50 +4100,63 @@ void Executor::getConstraintLog(const ExecutionState &state, std::string &res,
     //printer.setQuery(query);
     //printer.generateOutput();
     //res = info.str();
-    Query query(state.constraints, ConstantExpr::alloc(0, Expr::Bool));
-    
-    // We negate the Query Expr because in KLEE queries are solved
-    // in terms of validity, but SMT-LIB works in terms of satisfiability
-    ref<Expr> queryAssert = Expr::createIsZero(query.expr);
-
-    // Print constraints inside the main query to reuse the Expr bindings
-    for (std::vector<ref<Expr> >::const_iterator i = query.constraints.begin(),
-                                               e = query.constraints.end();
-        i != e; ++i) {
-      queryAssert = AndExpr::create(queryAssert, *i);
+    if (!IsInt){
+      std::string Str;
+      llvm::raw_string_ostream info(Str);
+      ExprSMTLIBPrinter printer;
+      printer.setOutput(info);
+      Query query(state.constraints, ConstantExpr::alloc(0, Expr::Bool));
+      printer.setQuery(query);
+      printer.generateOutput();
+      res = info.str();
+      std::cout<<res<<std::endl;
     }
-    std::vector<ref<Expr> > new_constraints = {queryAssert};
-    ExecutionState tmp_state = state;
-    tmp_state.constraints.replace_constraints(new_constraints);
-    //std::cout<<"EHERE\n";
-    Query tmp_query(tmp_state.constraints, ConstantExpr::alloc(0, Expr::Bool));
-    char *log = solver->getConstraintLog(tmp_query);
-    //std::cout<<"Printing width: "<<solver->getVarWidth(query)<<"\n";
-    res = std::string(log);
-    std::cout<<"Prinitng original pc: "<< res<<std::endl;
-    res = remove_let_binding(res);
-    std::set<std::string> var_name_set;
-    res = remove_array_definition(res, var_name_set);
-    std::cout<<"Printing translated pc: "<<res<<std::endl;
-    //std::cout<<res<<std::endl;
-    std::string hardcodedconstraint = res;
-    std::istringstream str(hardcodedconstraint);
-    Vlab::Driver driver;
-    driver.InitializeLogger(0);
-    driver.set_option(Vlab::Option::Name::REGEX_FLAG, 0x000f);
-    driver.Parse(&str);
-    driver.InitializeSolver();
-    driver.Solve();
-    bool result = driver.is_sat();
-    std::cout << result << std::endl;
-    Vlab::Theory::BigInteger count = driver.CountInts(solver->getVarWidth(query));
-    std::cout << count << " solutions" << std::endl;
-    driver.reset();
-    std::cout<< "Try cost" << state.steppedInstructions<<std::endl;
+    else{
+      Query query(state.constraints, ConstantExpr::alloc(0, Expr::Bool));
+      
+      // We negate the Query Expr because in KLEE queries are solved
+      // in terms of validity, but SMT-LIB works in terms of satisfiability
+      ref<Expr> queryAssert = Expr::createIsZero(query.expr);
+
+      // Print constraints inside the main query to reuse the Expr bindings
+      for (std::vector<ref<Expr> >::const_iterator i = query.constraints.begin(),
+                                                 e = query.constraints.end();
+          i != e; ++i) {
+        queryAssert = AndExpr::create(queryAssert, *i);
+      }
+      std::vector<ref<Expr> > new_constraints = {queryAssert};
+      ExecutionState tmp_state = state;
+      tmp_state.constraints.replace_constraints(new_constraints);
+      //std::cout<<"EHERE\n";
+      Query tmp_query(tmp_state.constraints, ConstantExpr::alloc(0, Expr::Bool));
+      char *log = solver->getConstraintLog(tmp_query);
+      //std::cout<<"Printing width: "<<solver->getVarWidth(query)<<"\n";
+      res = std::string(log);
+      std::cout<<"Printing original pc: "<< res<<std::endl;
+      res = remove_let_binding(res);
+      std::set<std::string> var_name_set;
+      res = remove_array_definition(res, var_name_set);
+      std::cout<<"Printing translated pc: \n"<<res<<std::endl;
+      //std::cout<<res<<std::endl;
+      std::string hardcodedconstraint = res;
+      std::istringstream str(hardcodedconstraint);
+      Vlab::Driver driver;
+      driver.InitializeLogger(0);
+      driver.set_option(Vlab::Option::Name::REGEX_FLAG, 0x000f);
+      driver.Parse(&str);
+      driver.InitializeSolver();
+      driver.Solve();
+      //bool result = driver.is_sat();
+      //std::cout << result << std::endl;
+      Vlab::Theory::BigInteger count = driver.CountInts(solver->getVarWidth(query) - 1);
+      std::cout << count << " solutions" << std::endl << std::endl;
+      driver.reset();
+      //std::cout<< "Try cost" << state.steppedInstructions<<std::endl;
 
 
-    //os->flush();
-    free(log);
+      //os->flush();
+      free(log);
+    }
   } break;
 
   default:

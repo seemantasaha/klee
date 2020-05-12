@@ -127,7 +127,7 @@ ref<Expr> ConstraintManager::simplifyExpr(ref<Expr> e) const {
 
 void ConstraintManager::replace_constraints(std::vector<ref<Expr>> v){
   constraints = v;
-  std::cout<<"New size: "<<constraints.size();
+  //std::cout<<"New size: "<<constraints.size();
 }
 
 void ConstraintManager::addConstraintInternal(ref<Expr> e) {

@@ -21,7 +21,7 @@
 
 
 namespace klee {
-  llvm::cl::opt<bool>
+  extern llvm::cl::opt<bool>
   IsInt("use-int-solver",
           llvm::cl::init(false),
           llvm::cl::desc("Try to use z3 int solver first (default=off)."));

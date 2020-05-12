@@ -45,7 +45,9 @@ int calculate_output43(int);
 int calculate_output44(int);
 int calculate_output45(int);
 int calculate_output46(int);
-extern void abort(void); 
+void abort(){
+	klee_abort();
+} 
 void reach_error(){}
 extern int __VERIFIER_nondet_int(void);
 extern void exit(int);
