@@ -20,7 +20,6 @@
 #include <string>
 #include <vector>
 #include <utility>
-#include <abc/Driver.h>
 
 namespace {
 llvm::cl::opt<bool> DumpPartialQueryiesEarly(
@@ -84,120 +83,120 @@ class CountConstructs : public ExprVisitor {
     }
 };
 
-std::vector<std::string> convert_formula_to_vector(std::string formula){
-  std::string word = "";
-  std::vector<std::string> vector_formula;
-  for (int i=0; i< formula.length(); i++){
-    if (formula[i] == '(' || formula[i] == ')'){
-      if (word != ""){
-        vector_formula.push_back(word);
-      }
-      vector_formula.push_back(formula.substr(i,1));
-      word = "";
-    }
-    else if (formula[i] == ' '){
-      if (word != ""){
-        vector_formula.push_back(word);
-      }
-      word = "";
-    }
-    else{
-      word+=formula[i];
-    }
-  }
-  return vector_formula;
-}
+// std::vector<std::string> convert_formula_to_vector(std::string formula){
+//   std::string word = "";
+//   std::vector<std::string> vector_formula;
+//   for (int i=0; i< formula.length(); i++){
+//     if (formula[i] == '(' || formula[i] == ')'){
+//       if (word != ""){
+//         vector_formula.push_back(word);
+//       }
+//       vector_formula.push_back(formula.substr(i,1));
+//       word = "";
+//     }
+//     else if (formula[i] == ' '){
+//       if (word != ""){
+//         vector_formula.push_back(word);
+//       }
+//       word = "";
+//     }
+//     else{
+//       word+=formula[i];
+//     }
+//   }
+//   return vector_formula;
+// }
 
-std::vector<std::string> translate_formula_vector(std::vector<std::string> formula, int begin){
-  // quite hacky
-  for (int i = begin; i < formula.size(); i++){
-    //std::cout<<i<<" ";
-    if (formula[i] == "("){
-      formula[i] = "( ";
-      int old_size = formula.size();
-      formula = translate_formula_vector (formula, i);
-      int new_size = formula.size();
-    }
-    else if (formula[i] == ")"){
-      formula[i] = " )";
-      std::vector<std::string> front(formula.begin(), formula.begin()+begin);
-      std::vector<std::string> back(formula.begin() + i + 1, formula.end());
-      std::vector<std::string> mid(formula.begin()+begin, formula.begin() + i + 1);
-      if (formula[begin + 1] == "_" && formula[begin + 2].substr(0,2) == "bv"){
-        mid = {formula[begin+2].substr(2)};
-      }
-      else if (formula[begin+1] == "select" || formula[begin+1] == "concat"){
-        mid = {formula[begin+2]};
-      }
-      else if (formula[begin+1] == "get-value"){
-        mid.clear();
-      }
-      else if (formula[begin+1] == "set-logic"){
-        mid = {"(", "set-logic", "QF_AUFLIA", ")"};
-      }
-      else if (formula[begin+1] == "Array"){
-        mid={"Int"};
-      }
-      else if (formula[begin+1] == "bvadd"){
-        mid[1] = "+";
-      }
-      else if (formula[begin+1] == "bvsub" || formula[begin+1] == "bvneg"){
-        mid[1] = "-";
-      }
-      else if (formula[begin+1] == "bvsdiv"){
-        mid[1] = "/";
-      }
-      else if (formula[begin+1] == "bvsrem" || formula[begin+1] == "bvsmod" ){
-        mid[1] = "%";
-      }
-      else if (formula[begin+1] == "bvmul"){
-        mid[1] = "*";
-      }
-      else if (formula[begin+1] == "bvslt"){
-        mid[1] = "<";
-      }
-      else if (formula[begin+1] == "bvsle"){
-        mid[1] = "<=";
-      }
-      else if (formula[begin+1] == "bvsgt"){
-        mid[1] = ">";
-      }
-      else if (formula[begin+1] == "bvsge"){
-        mid[1] = ">=";
-      }
-      front.insert(front.end(), mid.begin(), mid.end());
-      front.insert(front.end(), back.begin(), back.end());
-      return front;
-    }
-  }
-  return formula;
-}
+// std::vector<std::string> translate_formula_vector(std::vector<std::string> formula, int begin){
+//   // quite hacky
+//   for (int i = begin; i < formula.size(); i++){
+//     //std::cout<<i<<" ";
+//     if (formula[i] == "("){
+//       formula[i] = "( ";
+//       int old_size = formula.size();
+//       formula = translate_formula_vector (formula, i);
+//       int new_size = formula.size();
+//     }
+//     else if (formula[i] == ")"){
+//       formula[i] = " )";
+//       std::vector<std::string> front(formula.begin(), formula.begin()+begin);
+//       std::vector<std::string> back(formula.begin() + i + 1, formula.end());
+//       std::vector<std::string> mid(formula.begin()+begin, formula.begin() + i + 1);
+//       if (formula[begin + 1] == "_" && formula[begin + 2].substr(0,2) == "bv"){
+//         mid = {formula[begin+2].substr(2)};
+//       }
+//       else if (formula[begin+1] == "select" || formula[begin+1] == "concat"){
+//         mid = {formula[begin+2]};
+//       }
+//       else if (formula[begin+1] == "get-value"){
+//         mid.clear();
+//       }
+//       else if (formula[begin+1] == "set-logic"){
+//         mid = {"(", "set-logic", "QF_AUFLIA", ")"};
+//       }
+//       else if (formula[begin+1] == "Array"){
+//         mid={"Int"};
+//       }
+//       else if (formula[begin+1] == "bvadd"){
+//         mid[1] = "+";
+//       }
+//       else if (formula[begin+1] == "bvsub" || formula[begin+1] == "bvneg"){
+//         mid[1] = "-";
+//       }
+//       else if (formula[begin+1] == "bvsdiv"){
+//         mid[1] = "/";
+//       }
+//       else if (formula[begin+1] == "bvsrem" || formula[begin+1] == "bvsmod" ){
+//         mid[1] = "%";
+//       }
+//       else if (formula[begin+1] == "bvmul"){
+//         mid[1] = "*";
+//       }
+//       else if (formula[begin+1] == "bvslt"){
+//         mid[1] = "<";
+//       }
+//       else if (formula[begin+1] == "bvsle"){
+//         mid[1] = "<=";
+//       }
+//       else if (formula[begin+1] == "bvsgt"){
+//         mid[1] = ">";
+//       }
+//       else if (formula[begin+1] == "bvsge"){
+//         mid[1] = ">=";
+//       }
+//       front.insert(front.end(), mid.begin(), mid.end());
+//       front.insert(front.end(), back.begin(), back.end());
+//       return front;
+//     }
+//   }
+//   return formula;
+// }
 
-std::string translate_constraint(std::string constraint){
-  std::size_t found = constraint.find("\n");
-  std::string result = "";
-  std::size_t begin = 0;
-  while(found != std::string::npos){
-    std::string line = constraint.substr(begin, found-begin);
-    if (line == "" || line[0] == ';'){
-      result+=line;
-      //result+="\n";
-      begin=found+1;
-      found = constraint.find("\n", begin);
-      continue;
-    }
-    std::vector<std::string> formula_vector = convert_formula_to_vector(line);
-    std::vector<std::string> translated_formula_vector = translate_formula_vector(formula_vector, 0);
-    for (int i=0; i<translated_formula_vector.size(); i++){
-      result+=translated_formula_vector[i];
-      result+=" ";
-    }
-    //result+="\n";
-    begin=found+1;
-    found = constraint.find("\n", begin);
-  }
-  return result;
-}
+// std::string translate_constraint(std::string constraint){
+//   std::size_t found = constraint.find("\n");
+//   std::string result = "";
+//   std::size_t begin = 0;
+//   while(found != std::string::npos){
+//     std::string line = constraint.substr(begin, found-begin);
+//     if (line == "" || line[0] == ';'){
+//       result+=line;
+//       //result+="\n";
+//       begin=found+1;
+//       found = constraint.find("\n", begin);
+//       continue;
+//     }
+//     std::vector<std::string> formula_vector = convert_formula_to_vector(line);
+//     std::vector<std::string> translated_formula_vector = translate_formula_vector(formula_vector, 0);
+//     for (int i=0; i<translated_formula_vector.size(); i++){
+//       result+=translated_formula_vector[i];
+//       result+=" ";
+//     }
+//     //result+="\n";
+//     begin=found+1;
+//     found = constraint.find("\n", begin);
+//   }
+//   return result;
+// }
 
 QueryLoggingSolver::QueryLoggingSolver(Solver *_solver, std::string path,
                                        const std::string &commentSign,
@@ -234,41 +233,41 @@ void QueryLoggingSolver::flushBufferConditionally(bool writeToFile) {
   logBuffer.flush();
   if (writeToFile) {
     *os << logBuffer.str();
-    std::string constraint = logBuffer.str();
-    std::string translated_constraint = translate_constraint(constraint);
-    std::cout<<translated_constraint;
+    // std::string constraint = logBuffer.str();
+    // std::string translated_constraint = translate_constraint(constraint);
+    // std::cout<<translated_constraint;
     
-    std::string hardcodedconstraint = "(declare-fun s () String)(assert (in s /(a|b)*/))(check-sat)";
-    std::istringstream str(hardcodedconstraint);
-    //std::istringstream str(translated_constraint);
+    // std::string hardcodedconstraint = "(declare-fun s () String)(assert (in s /(a|b)*/))(check-sat)";
+    // std::istringstream str(hardcodedconstraint);
+    // //std::istringstream str(translated_constraint);
  
-    // handle for abc
-    Vlab::Driver driver;
+    // // handle for abc
+    // Vlab::Driver driver;
     
-    // initialize logger
-    driver.InitializeLogger(0);
+    // // initialize logger
+    // driver.InitializeLogger(0);
 
-    // set options
-    // e.g., enable/disable sorting, set count bound exact, etc... (see main.cpp for examples)
-    driver.set_option(Vlab::Option::Name::REGEX_FLAG, 0x000f);
+    // // set options
+    // // e.g., enable/disable sorting, set count bound exact, etc... (see main.cpp for examples)
+    // driver.set_option(Vlab::Option::Name::REGEX_FLAG, 0x000f);
 
-    // parse the file from SMT into an AST
-    // Parse() expects an istream (since it usually is read from a file)
-    driver.Parse(&str);
+    // // parse the file from SMT into an AST
+    // // Parse() expects an istream (since it usually is read from a file)
+    // driver.Parse(&str);
 
-    // Initialize symbol table & optimize AST
-    driver.InitializeSolver();
+    // // Initialize symbol table & optimize AST
+    // driver.InitializeSolver();
 
-    // Solve the constraint
-    driver.Solve();
+    // // Solve the constraint
+    // driver.Solve();
 
-    // Get the result of the constraint (sat/unsat)
-    bool result = driver.is_sat();
-    std::cout << result << std::endl;
+    // // Get the result of the constraint (sat/unsat)
+    // bool result = driver.is_sat();
+    // std::cout << result << std::endl;
 
-    // count number of solutions for a variable
-    Vlab::Theory::BigInteger count = driver.CountVariable("s", 10);
-    std::cout << "s" << " has " << count << " solutions" << std::endl;
+    // // count number of solutions for a variable
+    // Vlab::Theory::BigInteger count = driver.CountVariable("s", 10);
+    // std::cout << "s" << " has " << count << " solutions" << std::endl;
 
 
 
