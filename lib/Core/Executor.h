@@ -33,6 +33,7 @@
 #include <set>
 #include <string>
 #include <vector>
+#include <abc/Driver.h>
 
 struct KTest;
 
@@ -154,6 +155,9 @@ private:
   /// globals that have no representative object (i.e. functions).
   std::map<const llvm::GlobalValue*, ref<ConstantExpr> > globalAddresses;
 
+  /// Map for observational constraints using cost model of number of instructions executed
+  std::map<int,std::vector<std::pair<std::string,Vlab::Theory::BigInteger>>> observationConstraints;
+
   /// The set of legal function addresses, used to validate function
   /// pointers. We use the actual Function* address as the function address.
   std::set<uint64_t> legalFunctions;
@@ -209,6 +213,9 @@ private:
 
   /// Optimizes expressions
   ExprOptimizer optimizer;
+
+  /// total count of models
+  Vlab::Theory::BigInteger totalCount;
 
   /// Points to the merging searcher of the searcher chain,
   /// `nullptr` if merging is disabled
@@ -494,6 +501,10 @@ public:
   void getConstraintLog(const ExecutionState &state, std::string &res,
                         Interpreter::LogType logFormat =
                             Interpreter::STP) override;
+
+  void collectPathConstraintsWithCost(const ExecutionState &state);
+
+  void calculateInfoLeak();
 
   bool getSymbolicSolution(
       const ExecutionState &state,

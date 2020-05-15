@@ -85,7 +85,7 @@
 #include <vector>
 #include <iostream>
 #include <set>
-#include <abc/Driver.h>
+#include <math.h>
 
 using namespace llvm;
 using namespace klee;
@@ -4076,6 +4076,8 @@ std::string remove_array_definition(std::string constraint, std::set<std::string
 void Executor::getConstraintLog(const ExecutionState &state, std::string &res,
                                 Interpreter::LogType logFormat) {
 
+  
+  klee_message("Log format = %d", logFormat);
   switch (logFormat) {
   case STP: {
     Query query(state.constraints, ConstantExpr::alloc(0, Expr::Bool));
@@ -4137,6 +4139,7 @@ void Executor::getConstraintLog(const ExecutionState &state, std::string &res,
       std::set<std::string> var_name_set;
       res = remove_array_definition(res, var_name_set);
       std::cout<<"Printing translated pc: \n"<<res<<std::endl;
+
       //std::cout<<res<<std::endl;
       std::string hardcodedconstraint = res;
       std::istringstream str(hardcodedconstraint);
@@ -4162,6 +4165,131 @@ void Executor::getConstraintLog(const ExecutionState &state, std::string &res,
   default:
     klee_warning("Executor::getConstraintLog() : Log format not supported!");
   }
+}
+
+void Executor::collectPathConstraintsWithCost(const ExecutionState &state) {
+  Query query(state.constraints, ConstantExpr::alloc(0, Expr::Bool));
+      
+  // We negate the Query Expr because in KLEE queries are solved
+  // in terms of validity, but SMT-LIB works in terms of satisfiability
+  ref<Expr> queryAssert = Expr::createIsZero(query.expr);
+
+  // Print constraints inside the main query to reuse the Expr bindings
+  for (std::vector<ref<Expr> >::const_iterator i = query.constraints.begin(),
+                                             e = query.constraints.end();
+      i != e; ++i) {
+    queryAssert = AndExpr::create(queryAssert, *i);
+  }
+  std::vector<ref<Expr> > new_constraints = {queryAssert};
+  ExecutionState tmp_state = state;
+  tmp_state.constraints.replace_constraints(new_constraints);
+  //std::cout<<"EHERE\n";
+  Query tmp_query(tmp_state.constraints, ConstantExpr::alloc(0, Expr::Bool));
+  char *log = solver->getConstraintLog(tmp_query);
+  //std::cout<<"Printing width: "<<solver->getVarWidth(query)<<"\n";
+  std::string res = std::string(log);
+  res = remove_let_binding(res);
+  std::set<std::string> var_name_set;
+  res = remove_array_definition(res, var_name_set);
+
+  std::istringstream str(res);
+  Vlab::Driver driver;
+  driver.InitializeLogger(0);
+  driver.set_option(Vlab::Option::Name::REGEX_FLAG, 0x000f);
+  driver.Parse(&str);
+  driver.InitializeSolver();
+  driver.Solve();
+  Vlab::Theory::BigInteger count = driver.CountInts(solver->getVarWidth(query) - 1);
+  driver.reset();
+  
+  if(observationConstraints.count(state.steppedInstructions) != 0) {
+    observationConstraints.at(state.steppedInstructions).push_back(std::pair<std::string,Vlab::Theory::BigInteger>(res,count));
+  } else {
+    std::vector<std::pair<std::string,Vlab::Theory::BigInteger>> newVector;
+    newVector.push_back(std::pair<std::string,Vlab::Theory::BigInteger>(res,count)); 
+    observationConstraints.insert(std::pair<int, std::vector<std::pair<std::string,Vlab::Theory::BigInteger>>>(state.steppedInstructions, newVector));
+  }
+
+  totalCount += count;
+
+  //klee_message("cost: %d", state.steppedInstructions);
+  //klee_message("observationConstraints size: %d", observationConstraints.size());
+  //std::cout << "\nTotal count: " << totalCount <<"\n";
+}
+
+void Executor::calculateInfoLeak() {
+  int threshold = 10; /// we need to add an option for the threshold
+  int currentInterval, currentCost;
+
+  /// merge path constraints with non-distinguishable observations (costs)
+  //std::cout << "Number of observations:" << observationConstraints.size() << std::endl;
+  
+  if (observationConstraints.size() <= 0) {
+    std::cout << "No information leakage as there is no observations\n";
+    return;
+  }
+
+  std::map<int,std::vector<std::pair<std::string,Vlab::Theory::BigInteger>>>::iterator itr = observationConstraints.begin();
+  currentInterval = itr->first;
+  std::vector<std::pair<std::string,Vlab::Theory::BigInteger>> pathConditions = itr->second;
+
+  while (itr != observationConstraints.end()) {
+    currentCost = itr->first;
+
+    //std::cout << "\nCurrent cost: " << currentCost << std::endl;
+    //std::cout << "\nCurrent interval: " << currentInterval << std::endl;
+
+    if ( (currentCost > currentInterval) && (currentCost < currentInterval + threshold) ) {
+      for (std::pair<std::string,Vlab::Theory::BigInteger> pc: observationConstraints.at(currentCost)) {
+        //std::cout << std::endl << pc.first << std::endl;
+        pathConditions.push_back(pc);
+      }
+      //std::cout << "\nRemoved for current cost\n";
+      observationConstraints.erase(currentCost);
+      //std::cout << "\nNumber of paths: " << pathConditions.size() << std::endl;
+      //std::vector<std::pair<std::string,Vlab::Theory::BigInteger>>::iterator vitr = pathConditions.begin();
+      //while(vitr != pathConditions.end()) {
+      //  std::cout << std::endl << vitr->first << std::endl;
+      //  vitr++;
+      //}
+      observationConstraints.erase(currentInterval);
+      observationConstraints.insert(std::pair<int, std::vector<std::pair<std::string,Vlab::Theory::BigInteger>>>(currentInterval, pathConditions));
+    } else {
+      currentInterval = currentCost;
+      pathConditions = observationConstraints.at(currentInterval);
+      //std::cout << "\nNumber of paths: " << pathConditions.size() << std::endl;
+    }
+
+    itr++;
+  }
+
+  double entropy = 0.0;
+    
+  std::cout << "\nNumber of observations: " << observationConstraints.size() << std::endl;
+
+  std::map<int,std::vector<std::pair<std::string,Vlab::Theory::BigInteger>>>::iterator it = observationConstraints.begin();
+
+  while (it != observationConstraints.end()) {
+    std::cout << "\nCost: " << it->first << std::endl;
+    std::vector<std::pair<std::string,Vlab::Theory::BigInteger>> cons = it->second;
+    //std::cout << "\nNumber of paths: " << cons.size() << std::endl;
+    std::vector<std::pair<std::string,Vlab::Theory::BigInteger>>::iterator vit = cons.begin();
+    Vlab::Theory::BigInteger count;
+    while(vit != cons.end()) {
+      //std::cout << std::endl << vit->first << std::endl;
+      count += vit->second;
+      vit++;
+    }
+    std::cout << "\nCount:" << count;
+    double prob = double(count) / double(totalCount);
+    std::cout.precision(10);
+    std::cout << "\nProbability:" << prob;
+    if (prob >= 0)
+      entropy += (-1) * prob * log2(prob);
+    it++;
+  }
+  std::cout << "\nInformation Leakge: " << entropy << " bits";
+  std::cout << std::endl;
 }
 
 bool Executor::getSymbolicSolution(const ExecutionState &state,

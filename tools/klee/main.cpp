@@ -121,6 +121,10 @@ namespace {
                 cl::desc("Write .sym.path files for each test case (default=false)"),
                 cl::cat(TestCaseCat));
 
+  cl::opt<bool>
+  WriteInfoLeak("write-info-leak",
+                cl::desc("Write information leakage calculated based on model counting and information theory (default=false)"),
+                cl::cat(TestCaseCat));
 
   /*** Startup options ***/
 
@@ -556,6 +560,10 @@ void KleeHandler::processTestCase(const ExecutionState &state,
         auto f = openTestFile("smt2", id);
         if (f)
           *f << constraints;
+    }
+
+    if (WriteInfoLeak) {
+      m_interpreter->collectPathConstraintsWithCost(state);
     }
 
     if (m_symPathWriter) {
@@ -1507,8 +1515,6 @@ int main(int argc, char **argv, char **envp) {
     delete[] pArgv[i];
   delete[] pArgv;
 
-  delete interpreter;
-
   uint64_t queries =
     *theStatisticManager->getStatisticByName("Queries");
   uint64_t queriesValid =
@@ -1562,6 +1568,13 @@ int main(int argc, char **argv, char **envp) {
   handler->getInfoStream() << stats.str();
 
   delete handler;
+
+  /// show information leakage
+  if (WriteInfoLeak) {
+    interpreter->calculateInfoLeak();
+  }
+
+  delete interpreter;
 
   return 0;
 }

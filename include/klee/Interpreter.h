@@ -152,6 +152,10 @@ public:
                                 std::string &res,
                                 LogType logFormat = STP) = 0;
 
+  virtual void collectPathConstraintsWithCost(const ExecutionState &state) = 0;
+
+  virtual void calculateInfoLeak() = 0;
+
   virtual bool getSymbolicSolution(const ExecutionState &state,
                                    std::vector<
                                    std::pair<std::string,
