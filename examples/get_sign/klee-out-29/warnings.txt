@@ -1,1 +1,0 @@
-KLEE: ERROR: Cannot create prepared statement: 27 values for 28 columns

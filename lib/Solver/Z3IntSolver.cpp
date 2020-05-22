@@ -19,7 +19,8 @@
 #include "klee/Solver/SolverImpl.h"
 #include "llvm/Support/CommandLine.h"
 #include "llvm/Support/raw_ostream.h"
-
+#include<iostream>
+#include <cstdint>
 namespace {
 // NOTE: Very useful for debugging Z3 behaviour. These files can be given to
 // the z3 binary to replay all Z3 API calls using its `-log` option.
@@ -245,10 +246,16 @@ char *Z3IntSolverImpl::getConstraintLog(const Query &query) {
   // with whatever the solver's builder is set to do.
   Z3IntBuilder temp_builder(/*autoClearConstructCache=*/false,
                          /*z3LogInteractionFile=*/NULL);
+
   ConstantArrayFinder constant_arrays_in_query;
   for (auto const &constraint : query.constraints) {
-    assumptions.push_back(temp_builder.construct(constraint));
-    constant_arrays_in_query.visit(constraint);
+    try{
+      assumptions.push_back(temp_builder.construct(constraint));
+    } catch(...){
+      const char* str = "";
+      return strdup(str);
+    }
+    //constant_arrays_in_query.visit(constraint);
   }
 
   // KLEE Queries are validity queries i.e.
@@ -493,7 +500,9 @@ SolverImpl::SolverRunStatus Z3IntSolverImpl::handleSolverResponse(
         
         assert(successGet && "failed to get value back");
         switch(byteStride) {
-            case 1: 
+            case 1:
+                  //std::cout<<"arrayElementValue: "<<arrayElementValue<<std::endl; 
+                  //std::cout<<"Limit: "<< std::numeric_limits<int>::max() <<std::endl;
                   assert(arrayElementValue <= std::numeric_limits<std::int8_t>::max());
                   assert(arrayElementValue >= std::numeric_limits<std::int8_t>::min());
                   break;

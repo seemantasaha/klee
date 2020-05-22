@@ -1,2 +1,0 @@
-KLEE: Using Z3 solver backend
-KLEE: Dumping Z3 queries to "constraints.smt2"

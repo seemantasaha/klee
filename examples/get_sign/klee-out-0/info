@@ -1,14 +1,14 @@
-klee get_sign.bc
-PID: 28879
+klee -write-smt2s get_sign.bc
+PID: 8838
 Using monotonic steady clock with 1/1000000000s resolution
-Started: 2020-02-13 11:43:51
+Started: 2020-05-20 17:41:04
 BEGIN searcher description
 <InterleavedSearcher> containing 2 searchers:
 RandomPathSearcher
 WeightedRandomSearcher::CoveringNew
 </InterleavedSearcher>
 END searcher description
-Finished: 2020-02-13 11:43:51
+Finished: 2020-05-20 17:41:04
 Elapsed: 00:00:00
 KLEE: done: explored paths = 3
 KLEE: done: avg. constructs per query = 11

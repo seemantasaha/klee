@@ -4129,31 +4129,31 @@ void Executor::getConstraintLog(const ExecutionState &state, std::string &res,
       std::vector<ref<Expr> > new_constraints = {queryAssert};
       ExecutionState tmp_state = state;
       tmp_state.constraints.replace_constraints(new_constraints);
-      //std::cout<<"EHERE\n";
       Query tmp_query(tmp_state.constraints, ConstantExpr::alloc(0, Expr::Bool));
+      //std::cout<<"EHERE\n";
       char *log = solver->getConstraintLog(tmp_query);
       //std::cout<<"Printing width: "<<solver->getVarWidth(query)<<"\n";
       res = std::string(log);
       std::cout<<"Printing original pc: "<< res<<std::endl;
-      res = remove_let_binding(res);
-      std::set<std::string> var_name_set;
-      res = remove_array_definition(res, var_name_set);
-      std::cout<<"Printing translated pc: \n"<<res<<std::endl;
+      //res = remove_let_binding(res);
+      //std::set<std::string> var_name_set;
+      //res = remove_array_definition(res, var_name_set);
+      //std::cout<<"Printing translated pc: \n"<<res<<std::endl;
 
       //std::cout<<res<<std::endl;
-      std::string hardcodedconstraint = res;
-      std::istringstream str(hardcodedconstraint);
-      Vlab::Driver driver;
-      driver.InitializeLogger(0);
-      driver.set_option(Vlab::Option::Name::REGEX_FLAG, 0x000f);
-      driver.Parse(&str);
-      driver.InitializeSolver();
-      driver.Solve();
+      //std::string hardcodedconstraint = res;
+      //std::istringstream str(hardcodedconstraint);
+      //Vlab::Driver driver;
+      //driver.InitializeLogger(0);
+      //driver.set_option(Vlab::Option::Name::REGEX_FLAG, 0x000f);
+      //driver.Parse(&str);
+      //driver.InitializeSolver();
+      //driver.Solve();
       //bool result = driver.is_sat();
       //std::cout << result << std::endl;
-      Vlab::Theory::BigInteger count = driver.CountInts(solver->getVarWidth(query) - 1);
-      std::cout << count << " solutions" << std::endl << std::endl;
-      driver.reset();
+      //Vlab::Theory::BigInteger count = driver.CountInts(solver->getVarWidth(query) - 1);
+      //std::cout << count << " solutions" << std::endl << std::endl;
+      //driver.reset();
       //std::cout<< "Try cost" << state.steppedInstructions<<std::endl;
 
 

@@ -1,1 +1,4 @@
 KLEE: Using Z3 solver backend
+KLEE: Log format = 2
+KLEE: Log format = 2
+KLEE: Log format = 2
