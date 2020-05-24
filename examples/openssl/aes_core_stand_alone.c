@@ -231,6 +231,11 @@ signed int AES_set_decrypt_key(const unsigned char *userKey, const signed int bi
       rk[2l] = Td0[(signed long int)(Te1[(signed long int)(rk[2l] >> 24)] & 255u)] ^ Td1[(signed long int)(Te1[(signed long int)(rk[2l] >> 16 & 255u)] & 255u)] ^ Td2[(signed long int)(Te1[(signed long int)(rk[2l] >> 8 & 255u)] & 255u)] ^ Td3[(signed long int)(Te1[(signed long int)(rk[2l] & 255u)] & 255u)];
       rk[3l] = Td0[(signed long int)(Te1[(signed long int)(rk[3l] >> 24)] & 255u)] ^ Td1[(signed long int)(Te1[(signed long int)(rk[3l] >> 16 & 255u)] & 255u)] ^ Td2[(signed long int)(Te1[(signed long int)(rk[3l] >> 8 & 255u)] & 255u)] ^ Td3[(signed long int)(Te1[(signed long int)(rk[3l] & 255u)] & 255u)];
     }
+
+    //unsigned char in[32];
+    //unsigned char out[32];
+    //AES_decrypt(in, out, key);
+
     return 0;
   }
 }
@@ -318,19 +323,24 @@ signed int AES_set_encrypt_key(const unsigned char *userKey, const signed int bi
           rk[15l] = rk[7l] ^ rk[14l];
         }
 	  
+	  //unsigned char in[32];
+      //unsigned char out[32];
+      //AES_encrypt(in, out, key);
+      
       return 0;
     }
 }
 
 
 int main() {
-  unsigned char userKey[16];
+  unsigned char userKey[32];
   AES_KEY key;
   int bits;
 
   klee_make_symbolic(&bits, sizeof(bits), "bits");
   
-  AES_set_encrypt_key(userKey, bits, &key);
+  //AES_set_encrypt_key(userKey, bits, &key);
+  AES_set_decrypt_key(userKey, bits, &key);
 
   return 0;
 }
