@@ -501,8 +501,6 @@ SolverImpl::SolverRunStatus Z3IntSolverImpl::handleSolverResponse(
         assert(successGet && "failed to get value back");
         switch(byteStride) {
             case 1:
-                  //std::cout<<"arrayElementValue: "<<arrayElementValue<<std::endl; 
-                  //std::cout<<"Limit: "<< std::numeric_limits<int>::max() <<std::endl;
                   assert(arrayElementValue <= std::numeric_limits<std::int8_t>::max());
                   assert(arrayElementValue >= std::numeric_limits<std::int8_t>::min());
                   break;

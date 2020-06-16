@@ -3933,21 +3933,10 @@ std::string remove_let_binding(std::string constraint){
       var_pos = constraint.find(var_name, var_pos + 1);
     }  
   }
-  //std::cout<<"Constraint? "<<constraint<<std::endl;
-  //std::cout<<"var_name? "<<var_name<<std::endl;
-  //std::cout<<"left_paren_pos? "<<left_paren_pos<<std::endl;
-  //while(var_pos = constraint.find(var_name, var_pos) != std::string::npos){
-  //  std::cout<<"HERE???\n";
-  //  constraint.replace(var_pos, var_name.length(), expression);
-  //  std::cout<<"Constraint! "<<constraint<<std::endl;
-  //  var_pos += expression.length();
-  //}
-  //std::cout<<"Printing constraint: "<<constraint<<std::endl;
   return remove_let_binding(constraint);
 }
 
 std::string remove_array_definition(std::string constraint, std::set<std::string> var_name_set){
-  //TODO: More robust
   std::size_t pos = constraint.find("select");
   if (pos == std::string::npos){
     std::size_t declare_pos = 0;
@@ -4063,7 +4052,6 @@ std::string remove_array_definition(std::string constraint, std::set<std::string
     } else if (constraint[i] == ')'){
       break;
     } else{
-      //std::cout<<"HERE\n";
       index+=constraint[i];
     }
   }
@@ -4135,29 +4123,11 @@ void Executor::getConstraintLog(const ExecutionState &state, std::string &res,
       //std::cout<<"Printing width: "<<solver->getVarWidth(query)<<"\n";
       res = std::string(log);
       std::cout<<"Printing original pc: "<< res<<std::endl;
-      //res = remove_let_binding(res);
-      //std::set<std::string> var_name_set;
-      //res = remove_array_definition(res, var_name_set);
-      //std::cout<<"Printing translated pc: \n"<<res<<std::endl;
+      res = remove_let_binding(res);
+      std::set<std::string> var_name_set;
+      res = remove_array_definition(res, var_name_set);
+      std::cout<<"Printing translated pc: \n"<<res<<std::endl;
 
-      //std::cout<<res<<std::endl;
-      //std::string hardcodedconstraint = res;
-      //std::istringstream str(hardcodedconstraint);
-      //Vlab::Driver driver;
-      //driver.InitializeLogger(0);
-      //driver.set_option(Vlab::Option::Name::REGEX_FLAG, 0x000f);
-      //driver.Parse(&str);
-      //driver.InitializeSolver();
-      //driver.Solve();
-      //bool result = driver.is_sat();
-      //std::cout << result << std::endl;
-      //Vlab::Theory::BigInteger count = driver.CountInts(solver->getVarWidth(query) - 1);
-      //std::cout << count << " solutions" << std::endl << std::endl;
-      //driver.reset();
-      //std::cout<< "Try cost" << state.steppedInstructions<<std::endl;
-
-
-      //os->flush();
       free(log);
     }
   } break;

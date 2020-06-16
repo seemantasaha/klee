@@ -233,43 +233,6 @@ void QueryLoggingSolver::flushBufferConditionally(bool writeToFile) {
   logBuffer.flush();
   if (writeToFile) {
     *os << logBuffer.str();
-    // std::string constraint = logBuffer.str();
-    // std::string translated_constraint = translate_constraint(constraint);
-    // std::cout<<translated_constraint;
-    
-    // std::string hardcodedconstraint = "(declare-fun s () String)(assert (in s /(a|b)*/))(check-sat)";
-    // std::istringstream str(hardcodedconstraint);
-    // //std::istringstream str(translated_constraint);
- 
-    // // handle for abc
-    // Vlab::Driver driver;
-    
-    // // initialize logger
-    // driver.InitializeLogger(0);
-
-    // // set options
-    // // e.g., enable/disable sorting, set count bound exact, etc... (see main.cpp for examples)
-    // driver.set_option(Vlab::Option::Name::REGEX_FLAG, 0x000f);
-
-    // // parse the file from SMT into an AST
-    // // Parse() expects an istream (since it usually is read from a file)
-    // driver.Parse(&str);
-
-    // // Initialize symbol table & optimize AST
-    // driver.InitializeSolver();
-
-    // // Solve the constraint
-    // driver.Solve();
-
-    // // Get the result of the constraint (sat/unsat)
-    // bool result = driver.is_sat();
-    // std::cout << result << std::endl;
-
-    // // count number of solutions for a variable
-    // Vlab::Theory::BigInteger count = driver.CountVariable("s", 10);
-    // std::cout << "s" << " has " << count << " solutions" << std::endl;
-
-
 
     os->flush();
   }
