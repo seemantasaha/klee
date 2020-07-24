@@ -249,13 +249,8 @@ char *Z3IntSolverImpl::getConstraintLog(const Query &query) {
 
   ConstantArrayFinder constant_arrays_in_query;
   for (auto const &constraint : query.constraints) {
-    try{
-      assumptions.push_back(temp_builder.construct(constraint));
-    } catch(...){
-      const char* str = "";
-      return strdup(str);
-    }
-    //constant_arrays_in_query.visit(constraint);
+    assumptions.push_back(temp_builder.construct(constraint));
+    constant_arrays_in_query.visit(constraint);
   }
 
   // KLEE Queries are validity queries i.e.

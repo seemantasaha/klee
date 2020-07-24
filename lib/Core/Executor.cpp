@@ -3935,8 +3935,118 @@ std::string remove_let_binding(std::string constraint){
   }
   return remove_let_binding(constraint);
 }
+std::string remove_array_definition_bv(std::string constraint, std::set<std::string> var_name_set){
+  //TODO: More robust
+  std::size_t pos = constraint.find("select");
+  if (pos == std::string::npos){
+    std::size_t declare_pos = 0;
+    while(declare_pos < constraint.length()){
+      declare_pos = constraint.find("declare-fun");
+      if (declare_pos == std::string::npos){
+        declare_pos = constraint.find("set-logic");
+        if (declare_pos == std::string::npos){
+          break;
+        }
+      }
+      std::size_t declare_left_paren_pos = constraint.rfind("(", declare_pos);
+      if (declare_left_paren_pos == std::string::npos){
+        std::cout<<"Something is wrong (left paren)\n";
+        return constraint;
+      }
+      std::size_t declare_right_paren_pos = constraint.length();
+      for (std::size_t i = declare_left_paren_pos + 1, acc = 1; i < constraint.length(); i++){
+        if (constraint[i] == '('){
+          acc+=1;
+        }
+        if (constraint[i] == ')'){
+          acc-=1;
+          if (acc == 0){
+            declare_right_paren_pos = i;
+            break;
+          }
+        }
+      }
+      
+      if (declare_right_paren_pos == constraint.length()){
+        std::cout<<"Something is wrong (right paren)\n";
+        return constraint;
+      }
+      constraint.erase(declare_left_paren_pos, declare_right_paren_pos - declare_left_paren_pos + 1);
+    }
 
-std::string remove_array_definition(std::string constraint, std::set<std::string> var_name_set){
+    for (std::set<std::string>::iterator it=var_name_set.begin(); it!=var_name_set.end(); ++it){
+      constraint.insert(0, "(declare-fun " + *it + " () " + "(_ BitVec 8) " + ")\n");
+    }
+
+    for (std::size_t i = 0; i < constraint.length(); i++){
+      if (constraint[i] == '\n' && i + 1 != constraint.length() && constraint[i + 1] == '\n'){
+        constraint[i] = ' ';
+      }
+    }
+    //for (int)
+    std::string var_names = "";
+    for (std::set<std::string>::iterator it=var_name_set.begin(); it!=var_name_set.end(); ++it){
+      var_names += *it + " ";
+    }
+    constraint.insert(0,";" + var_names + "\n");
+    return constraint;
+  }
+  std::size_t left_paren_pos = constraint.rfind("(", pos);
+  if (left_paren_pos == std::string::npos){
+    std::cout<<"Something is wrong (left paren)\n";
+    return constraint;
+  }
+  std::size_t right_paren_pos = constraint.length();
+  for (std::size_t i = left_paren_pos + 1, acc = 1; i < constraint.length(); i++){
+    if (constraint[i] == '('){
+      acc+=1;
+    }
+    if (constraint[i] == ')'){
+      acc-=1;
+      if (acc == 0){
+        right_paren_pos = i;
+        break;
+      }
+    }
+  }
+
+  if (right_paren_pos == constraint.length()){
+    std::cout<<"Something is wrong (right paren)\n";
+    return constraint;
+  }
+
+  std::string arr_name = "";
+  std::size_t arr_name_end_pos = 0;
+  for (std::size_t i = pos + 6; i < constraint.length(); i++){
+    if (constraint[i] == ' '){
+      if (arr_name != ""){
+        arr_name_end_pos = i;
+        break;
+      } else{
+        continue;
+      }
+    } else{
+      arr_name+=constraint[i];
+    }
+  }
+  std::string index = "";
+  std::size_t i = constraint.find("bv", arr_name_end_pos);
+  if (i == std::string::npos){
+    std::cout<<"Something is wrong\n";
+    return constraint;
+  }
+  i = i + 2;
+  while(constraint[i] != ' '){
+    index += constraint[i];
+    i += 1;
+  }
+  std::string new_var = arr_name + "m" + index;
+  var_name_set.insert(new_var);
+  constraint.replace(left_paren_pos, right_paren_pos-left_paren_pos+1, new_var);
+  return remove_array_definition_bv(constraint, var_name_set);
+}
+
+std::string remove_array_definition_int(std::string constraint, std::set<std::string> var_name_set){
   std::size_t pos = constraint.find("select");
   if (pos == std::string::npos){
     std::size_t declare_pos = 0;
@@ -4058,7 +4168,7 @@ std::string remove_array_definition(std::string constraint, std::set<std::string
   std::string new_var = arr_name + "m" + index;
   var_name_set.insert(new_var);
   constraint.replace(left_paren_pos, right_paren_pos-left_paren_pos+1, new_var);
-  return remove_array_definition(constraint, var_name_set);
+  return remove_array_definition_int(constraint, var_name_set);
 }
 
 void Executor::getConstraintLog(const ExecutionState &state, std::string &res,
@@ -4099,6 +4209,9 @@ void Executor::getConstraintLog(const ExecutionState &state, std::string &res,
       printer.setQuery(query);
       printer.generateOutput();
       res = info.str();
+      std::set<std::string> var_name_set;
+      res = remove_array_definition_bv(res, var_name_set);
+      res.insert(0, ";" + std::to_string(state.steppedInstructions) + "\n");
       std::cout<<res<<std::endl;
     }
     else{
@@ -4125,7 +4238,7 @@ void Executor::getConstraintLog(const ExecutionState &state, std::string &res,
       std::cout<<"Printing original pc: "<< res<<std::endl;
       res = remove_let_binding(res);
       std::set<std::string> var_name_set;
-      res = remove_array_definition(res, var_name_set);
+      res = remove_array_definition_int(res, var_name_set);
       std::cout<<"Printing translated pc: \n"<<res<<std::endl;
 
       free(log);
@@ -4160,7 +4273,7 @@ void Executor::collectPathConstraintsWithCost(const ExecutionState &state) {
   std::string res = std::string(log);
   res = remove_let_binding(res);
   std::set<std::string> var_name_set;
-  res = remove_array_definition(res, var_name_set);
+  res = remove_array_definition_int(res, var_name_set);
 
   std::istringstream str(res);
   Vlab::Driver driver;

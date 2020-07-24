@@ -1,4 +1,5 @@
 #include "klee/klee.h"
+/*
 int checkPIN(char* h, char* l){
 	for (int i = 0; i < 4; i++){
 		if (h[i] != l[i])
@@ -6,6 +7,7 @@ int checkPIN(char* h, char* l){
 	}
 	return 1;
 }
+*/
 /*
 void mu(int32_t *a) {
 // original version
@@ -27,16 +29,31 @@ void mu(int32_t *a) {
 	a[2] = b[2];
 }
 */
+
+int test(int a){
+	if ( (a >> 1) > 0){
+		return 1;
+	}
+	return 0;
+}
+
 int main(){
-	char h[4];
-  	char l[4];
+	//char h[4];
+  	//char l[4];
   	// Make the input symbolic. 
-  	klee_make_symbolic(h, sizeof h, "h");
-  	klee_make_symbolic(l, sizeof l, "l");
-  	checkPIN(h,l);
+  	//klee_make_symbolic(h, sizeof h, "h");
+  	//klee_make_symbolic(l, sizeof l, "l");
+  	//checkPIN(h,l);
   	//int32_t a[3];
   	//klee_make_symbolic(a, sizeof a, "a");
   	//mu(a);
+
+  	int a;
+  	//int b;
+  	klee_make_symbolic(&a, sizeof a, "a");
+  	//klee_make_symbolic(&b, sizeof b, "b");
+
+  	test(a);
 	return 0;
 }
 	
