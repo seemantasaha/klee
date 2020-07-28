@@ -20,7 +20,7 @@ def model_count_SearchMC(file):
 		output_names += "-output_name=" + var_name + " "
 	#print(output_names)
 
-	process = subprocess.Popen(["./SearchMC.pl", "-input_type=smt", "-cl=0.9" ,"-thres=2"] + output_names.split() + [file], stdout = subprocess.PIPE)
+	process = subprocess.Popen(["./SearchMC.pl", "-input_type=smt", "-cl=1" ,"-thres=2"] + output_names.split() + [file], stdout = subprocess.PIPE)
 	result = process.communicate()[0].decode('utf-8')
 	#print(result)
 	lines = result.split('\n');
@@ -144,7 +144,7 @@ def get_maximum_and_minimun_entropy_ABC(observationConstraints, domain_size):   
 	return (min_entropy, max_entropy)
 
 
-def get_maximum_entropy_alt(observationConstraints, domain_size):
+def get_maximum_entropy_standard_deviation(observationConstraints, domain_size):
 	counts = {}
 	upper_lower_bound = {}
 	avg = int(domain_size/len(observationConstraints))
@@ -166,6 +166,7 @@ def get_maximum_entropy_alt(observationConstraints, domain_size):
 		elif avg > upper_bound:
 			counts[cost] = upper_bound
 			sum_counts += upper_bound
+	print("Initial counts:",upper_lower_bound)
 	diff = sum_counts - domain_size
 	if diff == 0:
 		for cost in counts:
@@ -175,6 +176,7 @@ def get_maximum_entropy_alt(observationConstraints, domain_size):
 		while diff != 0:
 			l = []
 			min_diff_between_count_and_avg = -1
+			second_min_diff_between_count_and_avg = -1
 			prev_min = -1
 			min_room_to_decrease = 0
 			for cost in counts:
@@ -187,7 +189,7 @@ def get_maximum_entropy_alt(observationConstraints, domain_size):
 					elif avg-counts[cost] < min_diff_between_count_and_avg:
 						# Find a count that is closer to avg
 						# Need to update previous closest count
-						prev_min = min_diff_between_count_and_avg
+						second_min_diff_between_count_and_avg = min_diff_between_count_and_avg
 						min_diff_between_count_and_avg = avg - counts[cost]
 						l = [cost]
 						min_room_to_decrease = counts[cost] - upper_lower_bound[cost][0]
@@ -198,9 +200,16 @@ def get_maximum_entropy_alt(observationConstraints, domain_size):
 						l.append(cost)
 						if counts[cost] - upper_lower_bound[cost][0] < min_room_to_decrease:
 							min_room_to_decrease = counts[cost] - upper_lower_bound[cost][0]
-
+					else:
+						if second_min_diff_between_count_and_avg == -1:
+							second_min_diff_between_count_and_avg = avg - counts[cost]
+						else:
+							if avg - counts[cost] < second_min_diff_between_count_and_avg:
+								second_min_diff_between_count_and_avg = avg - counts[cost]
+			if len(l) == 0:
+				print("Incorrect counts given by SearchMC:",upper_lower_bound)
 			avg_diff = int(diff/len(l))
-			diff_min_second = prev_min - min_diff_between_count_and_avg
+			diff_min_second = second_min_diff_between_count_and_avg - min_diff_between_count_and_avg
 
 			if avg_diff == 0:
 				for cost in l:
@@ -208,7 +217,7 @@ def get_maximum_entropy_alt(observationConstraints, domain_size):
 					diff -= 1
 					if diff == 0:
 						break
-			elif prev_min == -1:
+			elif second_min_diff_between_count_and_avg == -1:
 				# All counts that are smaller than avg are equal
 				for cost in l:
 					counts[cost] -= min(min_room_to_decrease, avg_diff)
@@ -223,7 +232,7 @@ def get_maximum_entropy_alt(observationConstraints, domain_size):
 		while diff != 0:
 			l = []
 			min_diff_between_count_and_avg = -1
-			prev_min = -1
+			second_min_diff_between_count_and_avg = -1
 			min_room_to_increase = 0
 			for cost in counts:
 				if counts[cost] < upper_lower_bound[cost][1] and counts[cost] - avg >= 0:
@@ -235,7 +244,7 @@ def get_maximum_entropy_alt(observationConstraints, domain_size):
 					elif counts[cost] - avg < min_diff_between_count_and_avg:
 						# Find a count that is closer to avg
 						# Need to update previous closest count
-						prev_min = min_diff_between_count_and_avg
+						second_min_diff_between_count_and_avg = min_diff_between_count_and_avg
 						min_diff_between_count_and_avg = counts[cost] - avg
 						l = [cost]
 						min_room_to_increase = upper_lower_bound[cost][1] - counts[cost]
@@ -246,10 +255,17 @@ def get_maximum_entropy_alt(observationConstraints, domain_size):
 						l.append(cost)
 						if upper_lower_bound[cost][1] - counts[cost] < min_room_to_increase:
 							min_room_to_increase = upper_lower_bound[cost][1] - counts[cost]
+					else:
+						if second_min_diff_between_count_and_avg == -1:
+							second_min_diff_between_count_and_avg = counts[cost] - avg
+						else:
+							if counts[cost] - avg < second_min_diff_between_count_and_avg:
+								second_min_diff_between_count_and_avg = counts[cost] - avg
 
-
+			if len(l) == 0:
+				print("Incorrect counts given by SearchMC:",upper_lower_bound)
 			avg_diff = int(diff/len(l))
-			diff_min_second = prev_min - min_diff_between_count_and_avg
+			diff_min_second = second_min_diff_between_count_and_avg - min_diff_between_count_and_avg
 
 			if avg_diff == 0:
 				for cost in l:
@@ -257,7 +273,7 @@ def get_maximum_entropy_alt(observationConstraints, domain_size):
 					diff -= 1
 					if diff == 0:
 						break
-			elif prev_min == -1:
+			elif second_min_diff_between_count_and_avg == -1:
 				# All counts that are greater than avg are equal
 				for cost in l:
 					counts[cost] += min(min_room_to_increase, avg_diff)
@@ -268,13 +284,14 @@ def get_maximum_entropy_alt(observationConstraints, domain_size):
 					diff -= min(min_room_to_increase, avg_diff, diff_min_second)
 	
 	for cost in counts:
-		print(cost,":",upper_lower_bound[cost],counts[cost])
+		#print(cost,":",upper_lower_bound[cost],counts[cost])
 		prob = counts[cost]/domain_size
 		max_entropy += -1 * prob * math.log(prob,2)
+	print("Standard deviation method end point:", counts)
 	return max_entropy
 
 
-def get_minimum_entropy_alt(observationConstraints, domain_size):
+def get_minimum_entropy_standard_deviation(observationConstraints, domain_size):
 	counts = {}
 	upper_lower_bound = {}
 	avg = int(domain_size/len(observationConstraints))
@@ -404,7 +421,7 @@ def get_minimum_entropy_alt(observationConstraints, domain_size):
 					diff -= min(min_room_to_increase, avg_diff, diff_min_second)
 	
 	for cost in counts:
-		print(cost,":",upper_lower_bound[cost],counts[cost])
+		#print(cost,":",upper_lower_bound[cost],counts[cost])
 		prob = counts[cost]/domain_size
 		min_entropy += -1 * prob * math.log(prob,2)
 	print(min_entropy)
@@ -554,7 +571,7 @@ def get_max_entropy_hill_climbing(observationConstraints, domain_size):
 			break
 		current_counts = neighbor[0]
 		current_entropy = neighbor[1]
-	print(current_counts)
+	print("Hill climbing end point:", current_counts)
 	return max_entropy
 
 
@@ -611,8 +628,8 @@ def get_max_entropy_SA(observationConstraints, domain_size):
 		current_counts.append((cost, counts[cost]))
 	print("Simulated Annealing starting point:", current_counts)
 
-	temp = 10000
-	coolingRate = 0.001
+	temp = 10
+	coolingRate = 0.1
 	current_entropy = 0
 	for i in range(len(current_counts)):
 		current_entropy += -1 * current_counts[i][1]/domain_size * math.log(current_counts[i][1]/domain_size, 2)
@@ -631,7 +648,7 @@ def get_max_entropy_SA(observationConstraints, domain_size):
 			current_counts = neighbor_counts
 			current_entropy = neighbor_entropy
 		temp *= 1 - coolingRate
-	print(current_counts)
+	print("Simulated Annealing end point:", current_counts)
 	return current_entropy
 
 if __name__ == '__main__':
@@ -656,11 +673,28 @@ if __name__ == '__main__':
 	#d.InitializeLogger(0)
 	#d.set_option(abc_py.REGEX_FLAG, 0x000f)
 	#d.set_option(abc_py.USE_UNSIGNED_INTEGERS)
-
-	observationConstraints = get_observation_constraints(klee_output_dir[len('-output-dir='):])
-	print(get_maximum_entropy_alt(observationConstraints, 4**8))
-	#get_minimum_entropy_alt(observationConstraints, 4**8)
-	print(get_max_entropy_hill_climbing(observationConstraints, 4**8))
-	print(get_max_entropy_SA(observationConstraints, 4**8))
-	#print(get_maximum_and_minimun_entropy(observationConstraints, 4**8))
-	#print(min_entropy, max_entropy)
+	SearchMCFail = 0
+	stddev_hill_mismatch = 0
+	for i in range (1000):
+		try:
+			observationConstraints = get_observation_constraints(klee_output_dir[len('-output-dir='):])
+			#print(get_maximum_entropy_alt(observationConstraints, 4**8))
+			#get_minimum_entropy_alt(observationConstraints, 4**8)
+			#print(get_max_entropy_hill_climbing(observationConstraints, 4**8))
+			#print(get_max_entropy_SA(observationConstraints, 4**8))
+			#print(get_maximum_and_minimun_entropy(observationConstraints, 4**8))
+			#print(min_entropy, max_entropy)
+			stddev_res = get_maximum_entropy_standard_deviation(observationConstraints, 4**8)
+			hill_res = get_max_entropy_hill_climbing(observationConstraints, 4**8)
+			if stddev_res != hill_res:
+				print("DIFFERENT:",stddev_res, stddev_res)
+				stddev_hill_mismatch+=1
+			else:
+				print("SAME:",stddev_res, hill_res)
+			print('\n\n')
+		except ZeroDivisionError:
+			SearchMCFail+=1
+		except ValueError:
+			SearchMCFail+=1
+	print("SearchMCFail", SearchMCFail)
+	print("stddev_hill_mismatch", stddev_hill_mismatch)
