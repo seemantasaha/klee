@@ -3,14 +3,12 @@
 import os
 import math
 import subprocess
-#import abc_py
 from collections import OrderedDict
 import argparse
 import random
 import z3
 import time
 all_var_names = set()
-total_size = 13
 total_solving_time = 0
 
 ############################Get model counts##########################
@@ -21,7 +19,7 @@ def calculate_domain_size(directory):
 		for file in files:
 			if file[-4:] == "smt2":
 				abs_path = os.path.abspath(os.path.join(root, file))
-				print(abs_path)
+				#print(abs_path)
 				var_names = set()
 				process = subprocess.Popen(["./stp-2.1.2", "-p", "--disable-simplifications", "--disable-cbitp", "--disable-equality" ,"-a", "-w", "--output-CNF",  "--minisat", abs_path], stdout = subprocess.PIPE)
 				result = process.communicate()[0].decode('utf-8')
@@ -30,42 +28,31 @@ def calculate_domain_size(directory):
 					words = line.split()
 					if len(words) > 0 and words[0] == "ASSERT(":
 						all_var_names.add(words[1])
-	print(all_var_names)
-	print(256**len(all_var_names))
+	#print(all_var_names)
+	#print(256**len(all_var_names))
 	return 256**len(all_var_names)
 
 
 def model_count_SearchMC(file):
-	#print(file)
+	global all_var_names
 	global total_solving_time
 	f = open(file, "r")
 	cost = f.readline()
-	#var_names = f.readline()
 	f.close()
-	#var_names = var_names[1:].split()
-	#print(cost)
-	
 	var_names = set()
 	assert_var_names = set()
-
 	process = subprocess.Popen(["./stp-2.1.2", "-p", "--disable-simplifications", "--disable-cbitp", "--disable-equality" ,"-a", "-w", "--output-CNF",  "--minisat", file], stdout = subprocess.PIPE)
 	result = process.communicate()[0].decode('utf-8')
-	#print(result)
-	#print('\n\n')
 	lines = result.split('\n');
 	for line in lines:
 		words = line.split()
 		if len(words) > 0 and words[0] == "VarDump:" and not words[1].startswith("STP__IndexVariables_"):
 			var_names.add(words[1])
-
 	output_names = " "
 	for var_name in var_names:
 		output_names += "-output_name=" + var_name + " "
-	#print(output_names)
-
 	process = subprocess.Popen(["./SearchMC.pl", "-input_type=smt", "-cl=0.95" ,"-thres=2"] + output_names.split() + [file], stdout = subprocess.PIPE)
 	result = process.communicate()[0].decode('utf-8')
-	#print(result)
 	lines = result.split('\n');
 	upper_bound = 0
 	lower_bound = 0
@@ -75,31 +62,19 @@ def model_count_SearchMC(file):
 			if l[1] == "Upper":
 				upper_bound = l[-1];
 				upper_bound = int(2**float(upper_bound))
-				#print("Upper bound:", upper_bound)
 			elif l[1] == "Lower":
 				lower_bound = l[-1];
 				lower_bound = int(2**float(lower_bound))
-				#print("Lower bound:", lower_bound)
-			elif l[1] = "Exact":
+			elif l[1] == "Exact":
 				lower_bound = int(l[-1])
 				upper_bound = int(l[-1])
 			elif l[1] == "Running":
 				runtime = float(l[-1])
 				total_solving_time += runtime
-	#print("(BEFORE) Upper bound: {}, Lower bound: {}".format(upper_bound, lower_bound))
-	#print("(After) Upper bound: {}, Lower bound: {}".format(upper_bound * ((2**8)**size_diff), lower_bound * ((2**8)**size_diff)))
-	return (lower_bound * (2**8), upper_bound * (2**8))
+	#print("diff", len(all_var_names) - len(var_names))
+	return (lower_bound * ((2 ** 8) ** (len(all_var_names) - len(var_names))), upper_bound * ((2 ** 8) ** (len(all_var_names) - len(var_names))))
 
-def model_count_ABC(constraint, driver, bound = 0):
-	driver.Parse(constraint)
-	driver.InitializeSolver()
-	driver.Solve()
-	count = 0
-	if bound != 0:
-		count = driver.CountInts(bound)
-	m = driver.getSatisfyingExamples()
-	driver.reset()
-	return (count, m)
+
 
 def get_observation_constraints(directory):
 	observationConstraints = {}
@@ -113,7 +88,7 @@ def get_observation_constraints(directory):
 				f.close()
 				cost = int(cost[1:])
 				count = model_count_SearchMC(abs_path)
-				print(all_var_names)
+				#print(all_var_names)
 				if cost in observationConstraints:
 					observationConstraints[cost].append((actual_constraint, count))
 				else:
@@ -150,66 +125,6 @@ def get_upper_lower_bounds(observationConstraints):
 	return upper_lower_bound
 
 #############################Calculate entropy#######################################
-
-
-'''
-def get_max_and_min_entropy_ABC(observationConstraints, domain_size):   # Deprecated because slow
-	constraints = {}
-	abc_constraint = ""
-	domain_size_assertion = ""
-	for cost in observationConstraints:
-		lower_bound = 0
-		upper_bound = 0
-		for (constraint,count) in observationConstraints[cost]:
-			lower_bound += count[0]
-			upper_bound += count[1]
-		var_name = 'c' + str(cost)
-		abc_constraint = '(declare-fun {} () Int)'.format(var_name) + abc_constraint
-		abc_constraint += '(assert (and (<= {} {}) (>= {} {})))'.format(var_name, upper_bound, var_name, lower_bound)
-		if domain_size_assertion == "":
-			domain_size_assertion += var_name
-		else:
-			domain_size_assertion = '(+ {} {})'.format(domain_size_assertion, var_name)
-	abc_constraint += '(assert (= {} {}))'.format(domain_size_assertion, domain_size)
-	abc_constraint += '(check-sat)'
-	print('abc_constraint:', abc_constraint)
-
-	driver = abc_py.Driver()
-	driver.InitializeLogger(0)
-	driver.set_option(abc_py.REGEX_FLAG, 0x000f)
-	driver.Parse(abc_constraint)
-	driver.InitializeSolver()
-	driver.Solve()
-	m = driver.getSatisfyingExamples()
-	min_entropy = 0
-	max_entropy = 0
-	while bool(m):
-		entropy = 0
-		driver.reset()
-		additional_assertion = ""
-		for key, value in m.items():
-			if key[0:11] != "__vlab__int":
-				prob = int(value)/domain_size
-				entropy += -1 * prob * math.log(prob,2)
-				additional_assertion += '(assert (not (= {} {})))'.format(key, value)
-		if entropy > max_entropy:
-			max_entropy = entropy
-		elif entropy < min_entropy:
-			min_entropy = entropy
-
-		abc_constraint = abc_constraint.replace('(check-sat)', '')
-		abc_constraint += additional_assertion
-		abc_constraint += '(check-sat)'
-
-		print('abc_constraint:', abc_constraint)
-
-		driver.Parse(abc_constraint)
-		driver.InitializeSolver()
-		driver.Solve()
-		m = driver.getSatisfyingExamples()
-
-	return (min_entropy, max_entropy)
-'''
 
 ############Standard deviation method##############
 def get_max_entropy_standard_deviation(upper_lower_bounds, domain_size):
@@ -513,189 +428,6 @@ def get_min_entropy_standard_deviation(upper_lower_bounds, domain_size):
 	return min_entropy
 
 
-'''
-def get_next_neighbor_max(current_counts, upper_lower_bound, domain_size, current_entropy): # Deprecated because slow
-	max_neighbor_entropy = current_entropy
-	max_neighbor = current_counts.copy()
-
-	for i in range(len(current_counts)):
-		neighbor = current_counts.copy()
-		cost = current_counts[i][0]
-		count = current_counts[i][1]
-		if count > upper_lower_bound[cost][0]:
-			dec_count = count - 1
-			for j in range(i + 1, len(current_counts)):
-				neighbor_cost = current_counts[j][0]
-				neighbor_count = current_counts[j][1]
-				if neighbor_count < upper_lower_bound[neighbor_cost][1]:
-					inc_neighbor_count = neighbor_count + 1
-					neighbor[i] = (cost, dec_count)
-					neighbor[j] = (neighbor_cost, inc_neighbor_count)
-					entropy = 0
-					for k in range(len(neighbor)):
-						entropy += -1 * neighbor[k][1]/domain_size * math.log(neighbor[k][1]/domain_size, 2)
-					if entropy > max_neighbor_entropy:
-						max_neighbor_entropy = entropy
-						max_neighbor = neighbor.copy()
-						return (max_neighbor, max_neighbor_entropy)
-					neighbor = current_counts.copy()
-		
-		if count < upper_lower_bound[cost][1]:
-			inc_count = count + 1
-			for j in range(i + 1, len(current_counts)):
-				neighbor_cost = current_counts[j][0]
-				neighbor_count = current_counts[j][1]
-				if neighbor_count > upper_lower_bound[neighbor_cost][0]:
-					dec_neighbor_count = neighbor_count - 1
-					neighbor[i] = (cost, inc_count)
-					entropy = 0
-					neighbor[j] = (neighbor_cost, dec_neighbor_count)
-					for k in range(len(neighbor)):
-						entropy += -1 * neighbor[k][1]/domain_size * math.log(neighbor[k][1]/domain_size, 2)
-					if entropy > max_neighbor_entropy:
-						max_neighbor_entropy = entropy
-						max_neighbor = neighbor.copy()
-						return (max_neighbor, max_neighbor_entropy)
-					neighbor = current_counts.copy()
-	#print(max_neighbor)
-	return (max_neighbor, max_neighbor_entropy)
-
-def get_next_neighbor_min(current_counts, upper_lower_bound, domain_size, current_entropy):
-	min_neighbor_entropy = current_entropy
-	min_neighbor = current_counts.copy()
-
-	for i in range(len(current_counts)):
-		neighbor = current_counts.copy()
-		cost = current_counts[i][0]
-		count = current_counts[i][1]
-		if count > upper_lower_bound[cost][0]:
-			dec_count = count - 1
-			for j in range(i + 1, len(current_counts)):
-				neighbor_cost = current_counts[j][0]
-				neighbor_count = current_counts[j][1]
-				if neighbor_count < upper_lower_bound[neighbor_cost][1]:
-					inc_neighbor_count = neighbor_count + 1
-					neighbor[i] = (cost, dec_count)
-					neighbor[j] = (neighbor_cost, inc_neighbor_count)
-					entropy = 0
-					for k in range(len(neighbor)):
-						entropy += -1 * neighbor[k][1]/domain_size * math.log(neighbor[k][1]/domain_size, 2)
-					if entropy < min_neighbor_entropy:
-						min_neighbor_entropy = entropy
-						min_neighbor = neighbor.copy()
-					neighbor = current_counts.copy()
-		
-		if count < upper_lower_bound[cost][1]:
-			inc_count = count + 1
-			for j in range(i + 1, len(current_counts)):
-				neighbor_cost = current_counts[j][0]
-				neighbor_count = current_counts[j][1]
-				if neighbor_count > upper_lower_bound[neighbor_cost][0]:
-					dec_neighbor_count = neighbor_count - 1
-					neighbor[i] = (cost, inc_count)
-					entropy = 0
-					neighbor[j] = (neighbor_cost, dec_neighbor_count)
-					for k in range(len(neighbor)):
-						entropy += -1 * neighbor[k][1]/domain_size * math.log(neighbor[k][1]/domain_size, 2)
-					if entropy < min_neighbor_entropy:
-						min_neighbor_entropy = entropy
-						min_neighbor = neighbor.copy()
-					neighbor = current_counts.copy()
-	return (min_neighbor, min_neighbor_entropy)
-
-def get_max_entropy_hill_climbing(observationConstraints, domain_size):
-	
-	counts = {}
-	upper_lower_bound = {}
-	avg = int(domain_size/len(observationConstraints))
-	sum_counts = 0
-	max_entropy = 0
-	sum_var = 0;
-	s = z3.Solver()
-	var_list = {}
-	for cost in observationConstraints:
-		temp = z3.Int("c" + str(cost))
-		lower_bound = 0
-		upper_bound = 0
-		for (constraint,count) in observationConstraints[cost]:
-			lower_bound += count[0]
-			upper_bound += count[1]
-		upper_lower_bound[cost] = (lower_bound, upper_bound)
-		s.add(temp >= lower_bound)
-		s.add(temp <= upper_bound)
-		sum_var += temp;
-		var_list[cost] = temp;
-	s.add(sum_var == domain_size)
-	s.check()
-	m = s.model();
-	for cost in observationConstraints:
-		counts[cost] = int(str(m[var_list[cost]]))
-	current_counts = []
-	for cost in counts:
-		current_counts.append((cost, counts[cost]))
-	#print(upper_lower_bound)
-	#print("Hill climbing starting point:", current_counts)
-	current_entropy = 0
-	for i in range(len(current_counts)):
-		current_entropy += -1 * current_counts[i][1]/domain_size * math.log(current_counts[i][1]/domain_size, 2)
-	while True:
-		#print("current_counts:", current_counts)
-		neighbor = get_next_neighbor_max(current_counts, upper_lower_bound, domain_size, current_entropy)
-		if neighbor[1] == current_entropy:
-			max_entropy = current_entropy
-			break
-		current_counts = neighbor[0]
-		current_entropy = neighbor[1]
-	#print("Hill climbing end point:", current_counts)
-	return max_entropy
-
-def get_min_entropy_hill_climbing(observationConstraints, domain_size):
-	
-	counts = {}
-	upper_lower_bound = {}
-	avg = int(domain_size/len(observationConstraints))
-	sum_counts = 0
-	min_entropy = 0
-	sum_var = 0;
-	s = z3.Solver()
-	var_list = {}
-	for cost in observationConstraints:
-		temp = z3.Int("c" + str(cost))
-		lower_bound = 0
-		upper_bound = 0
-		for (constraint,count) in observationConstraints[cost]:
-			lower_bound += count[0]
-			upper_bound += count[1]
-		upper_lower_bound[cost] = (lower_bound, upper_bound)
-		s.add(temp >= lower_bound)
-		s.add(temp <= upper_bound)
-		sum_var += temp;
-		var_list[cost] = temp;
-	s.add(sum_var == domain_size)
-	s.check()
-	m = s.model();
-	for cost in observationConstraints:
-		counts[cost] = int(str(m[var_list[cost]]))
-	current_counts = []
-	for cost in counts:
-		current_counts.append((cost, counts[cost]))
-	#print("Hill climbing starting point:", current_counts)
-	current_entropy = 0
-	for i in range(len(current_counts)):
-		current_entropy += -1 * current_counts[i][1]/domain_size * math.log(current_counts[i][1]/domain_size, 2)
-	while True:
-		#print("current_counts:", current_counts)
-		neighbor = get_next_neighbor_min(current_counts, upper_lower_bound, domain_size, current_entropy)
-		if neighbor[1] == current_entropy:
-			min_entropy = current_entropy
-			break
-		current_counts = neighbor[0]
-		current_entropy = neighbor[1]
-	#print("Hill climbing end point:", current_counts)
-	return min_entropy
-
-'''
-
 #################Hill climbing method (random)#####################
 
 def get_next_neighbor_max_random(current_counts, upper_lower_bound, domain_size, current_entropy):
@@ -769,7 +501,7 @@ def get_next_neighbor_min_random(current_counts, upper_lower_bound, domain_size,
 			else:
 				change = -1 * diff
 				if change > upper_room or change < lower_room:
-					print(neighbor)
+					#print(neighbor)
 					raise ValueError
 				max_upper_room -= upper_room
 				max_lower_room -= lower_room
@@ -999,6 +731,7 @@ if __name__ == '__main__':
 	parser.add_argument("--klee_output_dir", required=True)
 	parser.add_argument("--target", required=True)
 	parser.add_argument("--klee_dir")
+	parser.add_argument("--domain_size")
 	args = parser.parse_args()
 	dict_args = vars(args)
 	target = dict_args["target"]
@@ -1010,16 +743,13 @@ if __name__ == '__main__':
 		klee_dir = "klee"
 
 	klee_output_dir = "-output-dir=" + klee_output_dir
-	klee_output_stream = subprocess.Popen([klee_dir, klee_output_dir, '-write-smt2s', target])
+	#klee_output_stream = subprocess.Popen([klee_dir, klee_output_dir, '-write-smt2s', target])
 
-	#d = abc_py.Driver()
-	#d.InitializeLogger(0)
-	#d.set_option(abc_py.REGEX_FLAG, 0x000f)
-	#d.set_option(abc_py.USE_UNSIGNED_INTEGERS)
 	SearchMCFail = 0
-	stddev_hill_mismatch = 0
-	#domain_size = (2**8)**total_size;
 	domain_size = calculate_domain_size(klee_output_dir[len('-output-dir='):])
+	if dict_args["domain_size"] != None:
+		domain_size = int(str(dict_args["domain_size"]))
+
 	stddev_max_list = []
 	stddev_min_list = []
 	hill_max_list = []
@@ -1030,32 +760,20 @@ if __name__ == '__main__':
 		try:
 			observationConstraints = get_observation_constraints(klee_output_dir[len('-output-dir='):])
 			upper_lower_bounds = get_upper_lower_bounds(observationConstraints)
-			#print(get_maximum_entropy_alt(observationConstraints, 4**8))
-			#get_minimum_entropy_alt(observationConstraints, 4**8)
-			#print(get_max_entropy_hill_climbing(observationConstraints, 4**8))
-			#print(get_max_entropy_SA(observationConstraints, 4**8))
-			#print(get_maximum_and_minimun_entropy(observationConstraints, 4**8))
-			#print(min_entropy, max_entropy)
 			max_entropy_stddev = get_max_entropy_standard_deviation(upper_lower_bounds, domain_size)
 			min_entropy_stddev = get_min_entropy_standard_deviation(upper_lower_bounds, domain_size)
 			print("Max entropy (stddev): {}, Min entropy (stddev): {}".format(max_entropy_stddev, min_entropy_stddev))
-			#print(max_entropy_stddev, min_entropy_stddev)
-			#print(get_max_entropy_hill_climbing(observationConstraints, domain_size))
+
 			max_entropy_hill = get_max_entropy_hill_climbing_random(upper_lower_bounds, domain_size)
 			min_entropy_hill = get_min_entropy_hill_climbing_random(upper_lower_bounds, domain_size)
 			print("Max entropy (hill climbing): {}, Min entropy (hill climbing): {}".format(max_entropy_hill, min_entropy_hill))
 
 			max_entropy_SA = get_max_entropy_SA(upper_lower_bounds, domain_size)
 			min_entropy_SA = get_min_entropy_SA(upper_lower_bounds, domain_size)
-			print("Max entropy (SA): {}, Min entropy (SA): {}".format(max_entropy_SA, min_entropy_SA))
+			print("Max entropy (simulated annealing): {}, Min entropy (SA): {}".format(max_entropy_SA, min_entropy_SA))
 
 			stddev_max_list.append(max_entropy_stddev)
 			stddev_min_list.append(min_entropy_stddev)
-
-			#hill_max_list.append(max_entropy_hill)
-			#hill_min_list.append(min_entropy_hill)
-
-			#print('\n')
 			end_time = time.time()
 			time_list.append(end_time - start_time)
 			print(end_time - start_time, "s")
