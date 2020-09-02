@@ -24,14 +24,3 @@ files, pipes, environment variables, and passing command line
 arguments.
 
 For further information, see the [webpage](http://klee.github.io/).
-
-
-Conenct KLEE with SearchMC
----
-Assume KLEE and SearchMC installed, put klee_py.py in the same directory as SearchMC.
-
-Two options need to be specified:
-1. `--target`: The LLVM bitcode that KLEE will execute
-2. `--klee_output_dir`: The directory to which the output of KLEE will go 
-
-Run klee_py.py inside SearchMC directory: `./klee_py.py --klee_output_dir=? --target=?`

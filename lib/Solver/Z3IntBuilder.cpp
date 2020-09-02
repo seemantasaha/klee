@@ -425,7 +425,7 @@ Z3ASTHandle Z3IntBuilder::constructActual(ref<Expr> e, int *width_out) {
     auto stride = re->updates.root->valueType / 8;
 //    re->dump();
 //    llvm::errs() << "of width: " << *width_out << " array type: " << re->updates.root->valueType << "\n";
-    assert(readlsb_width == re->updates.root->valueType && "ReadLSB of different width the the array type, meaning it is not an int read");
+    if (readlsb_width != re->updates.root->valueType){ throw "ReadLSB of different width the the array type, meaning it is not an int read";}
     assert(stride > 0 && "can;t concatnact for unknwon array type");
     ref<Expr> index = UDivExpr::create(re->index, ConstantExpr::create(stride, re->index->getWidth()));
     return readExpr(getArrayForUpdate(re->updates.root, re->updates.head),
