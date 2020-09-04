@@ -114,15 +114,15 @@ def get_observation_constraints(directory):
 	return observationConstraints
 
 def get_upper_lower_bounds(observationConstraints):
-	upper_lower_bound = dict()
+	upper_lower_bounds = dict()
 	for cost in observationConstraints:
 		lower_bound = 0
 		upper_bound = 0
 		for (constraint, count) in observationConstraints[cost]:
 			lower_bound += count[0]
 			upper_bound += count[1]
-		upper_lower_bound[cost] = (lower_bound, upper_bound)
-	return upper_lower_bound
+		upper_lower_bounds[cost] = (lower_bound, upper_bound)
+	return upper_lower_bounds
 
 #############################Calculate entropy#######################################
 
@@ -233,7 +233,7 @@ def get_max_entropy_standard_deviation(upper_lower_bounds, domain_size):
 						# No need to update previous closest count
 						# May need to update min_room_to_decrease
 						l.append(cost)
-						if upper_lower_bound[cost][1] - counts[cost] < min_room_to_increase:
+						if upper_lower_bounds[cost][1] - counts[cost] < min_room_to_increase:
 							min_room_to_increase = upper_lower_bounds[cost][1] - counts[cost]
 					else:
 						if second_min_diff_between_count_and_avg == -1:
@@ -337,7 +337,7 @@ def get_min_entropy_standard_deviation(upper_lower_bounds, domain_size):
 								second_min_diff_between_count_and_avg = abs(avg - counts[cost])
 
 			if len(l) == 0:
-				print("Incorrect counts given by SearchMC:", upper_lower_bound)
+				print("Incorrect counts given by SearchMC:", upper_lower_bounds)
 			avg_diff = int(diff/len(l))
 			if second_min_diff_between_count_and_avg != -1:
 				diff_min_second = second_min_diff_between_count_and_avg - min_diff_between_count_and_avg
@@ -396,7 +396,7 @@ def get_min_entropy_standard_deviation(upper_lower_bounds, domain_size):
 								second_min_diff_between_count_and_avg = abs(counts[cost] - avg)
 
 			if len(l) == 0:
-				print("Incorrect counts given by SearchMC:",upper_lower_bounda)
+				print("Incorrect counts given by SearchMC:",upper_lower_bounds)
 			avg_diff = int(diff/len(l))
 
 			if second_min_diff_between_count_and_avg != -1:
@@ -430,7 +430,7 @@ def get_min_entropy_standard_deviation(upper_lower_bounds, domain_size):
 
 #################Hill climbing method (random)#####################
 
-def get_next_neighbor_max_random(current_counts, upper_lower_bound, domain_size, current_entropy):
+def get_next_neighbor_max_random(current_counts, upper_lower_bounds, domain_size, current_entropy):
 	max_neighbor_entropy = current_entropy
 	max_neighbor = current_counts.copy()
 	for i in range(40):
@@ -441,13 +441,13 @@ def get_next_neighbor_max_random(current_counts, upper_lower_bound, domain_size,
 		for j in range(len(current_counts)):
 			cost = neighbor[j][0]
 			count = neighbor[j][1]
-			max_upper_room += upper_lower_bound[cost][1] - count
-			max_lower_room += upper_lower_bound[cost][0] - count
+			max_upper_room += upper_lower_bounds[cost][1] - count
+			max_lower_room += upper_lower_bounds[cost][0] - count
 		for j in range(len(current_counts)):
 			cost = neighbor[j][0]
 			count = neighbor[j][1]
-			upper_room = upper_lower_bound[cost][1] - count
-			lower_room = upper_lower_bound[cost][0] - count
+			upper_room = upper_lower_bounds[cost][1] - count
+			lower_room = upper_lower_bounds[cost][0] - count
 			if j != len(current_counts) - 1:
 				change = random.randint(max(lower_room, upper_room - max_upper_room - diff), min(upper_room, lower_room - max_lower_room - diff))
 				max_upper_room -= upper_room
@@ -473,7 +473,7 @@ def get_next_neighbor_max_random(current_counts, upper_lower_bound, domain_size,
 			max_neighbor = neighbor.copy()
 	return (max_neighbor, max_neighbor_entropy)
 
-def get_next_neighbor_min_random(current_counts, upper_lower_bound, domain_size, current_entropy):
+def get_next_neighbor_min_random(current_counts, upper_lower_bounds, domain_size, current_entropy):
 	max_neighbor_entropy = current_entropy
 	max_neighbor = current_counts.copy()
 	for i in range(40):
@@ -484,13 +484,13 @@ def get_next_neighbor_min_random(current_counts, upper_lower_bound, domain_size,
 		for j in range(len(current_counts)):
 			cost = neighbor[j][0]
 			count = neighbor[j][1]
-			max_upper_room += upper_lower_bound[cost][1] - count
-			max_lower_room += upper_lower_bound[cost][0] - count
+			max_upper_room += upper_lower_bounds[cost][1] - count
+			max_lower_room += upper_lower_bounds[cost][0] - count
 		for j in range(len(current_counts)):
 			cost = neighbor[j][0]
 			count = neighbor[j][1]
-			upper_room = upper_lower_bound[cost][1] - count
-			lower_room = upper_lower_bound[cost][0] - count
+			upper_room = upper_lower_bounds[cost][1] - count
+			lower_room = upper_lower_bounds[cost][0] - count
 			if j != len(current_counts) - 1:
 				change = random.randint(max(lower_room, upper_room - max_upper_room - diff), min(upper_room, lower_room - max_lower_room - diff))
 				max_upper_room -= upper_room
@@ -770,7 +770,7 @@ if __name__ == '__main__':
 
 			max_entropy_SA = get_max_entropy_SA(upper_lower_bounds, domain_size)
 			min_entropy_SA = get_min_entropy_SA(upper_lower_bounds, domain_size)
-			print("Max entropy (simulated annealing): {}, Min entropy (SA): {}".format(max_entropy_SA, min_entropy_SA))
+			print("Max entropy (simulated annealing): {}, Min entropy (simulated annealing): {}".format(max_entropy_SA, min_entropy_SA))
 
 			stddev_max_list.append(max_entropy_stddev)
 			stddev_min_list.append(min_entropy_stddev)
