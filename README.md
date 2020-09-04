@@ -34,4 +34,4 @@ Two options need to be specified:
 1. `--target`: The LLVM bitcode that KLEE will execute
 2. `--klee_output_dir`: The directory to which the output of KLEE will go 
 
-Run klee_py.py inside SearchMC directory: `./klee_py.py --klee_output_dir=? --target=?`
+Run klee_py.py inside SearchMC directory: `./klee_py.py --klee_output_dir=? --domain_size=?(required when using klee_assume, optional otherwise)`
