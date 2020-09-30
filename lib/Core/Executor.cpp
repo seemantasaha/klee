@@ -4209,12 +4209,8 @@ void Executor::getConstraintLog(const ExecutionState &state, std::string &res,
       printer.setQuery(query);
       printer.generateOutput();
       res = info.str();
-      std::set<std::string> var_name_set;
-      res = remove_array_definition_bv(res, var_name_set);
       res.insert(0, ";" + std::to_string(state.steppedInstructions) + "\n");
-      std::cout<<res<<std::endl;
-    }
-    else{
+    } else{
       Query query(state.constraints, ConstantExpr::alloc(0, Expr::Bool));
       
       // We negate the Query Expr because in KLEE queries are solved
@@ -4231,7 +4227,7 @@ void Executor::getConstraintLog(const ExecutionState &state, std::string &res,
       ExecutionState tmp_state = state;
       tmp_state.constraints.replace_constraints(new_constraints);
       Query tmp_query(tmp_state.constraints, ConstantExpr::alloc(0, Expr::Bool));
-      //std::cout<<"EHERE\n";
+      //std::cout<<"HERE\n";
       char *log = solver->getConstraintLog(tmp_query);
       //std::cout<<"Printing width: "<<solver->getVarWidth(query)<<"\n";
       res = std::string(log);
