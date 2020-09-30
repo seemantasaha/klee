@@ -1,1 +1,1 @@
-To tey this example, run './KLEE_SearchMC.py --klee_output_dir=/path/to/SearchMC_examples --domain_size=100000000' inside the SearchMC directory
+To try this example, run './KLEE_SearchMC.py --klee_output_dir=/path/to/SearchMC_examples --domain_size=100000000' inside the SearchMC directory
