@@ -11,6 +11,7 @@ import pyparma
 from scipy.optimize import minimize
 from fractions import Fraction
 import numpy as np
+import cvxpy as cp
 
 all_var_names = set()
 total_solving_time = 0
@@ -907,9 +908,39 @@ def get_max_entropy_SLSQP(upper_lower_bounds, domain_size):
 
 	max_entropy_point = {}
 	for i in range(len(cost_list)):
-		max_entropy_point[cost_list[i]] = int(res.x[i] * domain_size)
+		max_entropy_point[cost_list[i]] = int(round(res.x[i] * domain_size))
 
 	return (max_entropy_point, -1 * res.fun)
+
+def get_max_entropy_CVXPY(upper_lower_bounds, domain_size):
+	upper_lower_bounds_list = []
+	for cost in upper_lower_bounds:
+		upper_lower_bounds_list.append((cost, upper_lower_bounds[cost]))
+
+	probs = cp.Variable(len(upper_lower_bounds))
+	matrix = np.zeros((2 * len(upper_lower_bounds), len(upper_lower_bounds)))
+	vec = np.zeros(2 * len(upper_lower_bounds))
+	for i in range(len(upper_lower_bounds_list)):
+		matrix[i * 2, i] = 1
+		vec[i * 2] = upper_lower_bounds_list[i][1][1]/domain_size
+		matrix[i * 2 + 1, i] = -1
+		vec[i * 2 + 1] = -1 * upper_lower_bounds_list[i][1][0]/domain_size
+
+	domain_vec = np.ones(len(upper_lower_bounds))
+
+	objective = cp.Maximize(cp.sum(cp.entr(probs)))
+	constraints = [matrix @ probs <= vec, domain_vec @ probs == 1]
+
+	problem = cp.Problem(objective, constraints)
+	max_entropy = problem.solve()
+	assert(problem.status == 'optimal')
+	max_entropy = 0
+	max_entropy_point = {}
+
+	for i in range(len(probs.value)):
+		max_entropy += -1 * probs.value[i] * math.log(probs.value[i],2)
+		max_entropy_point[upper_lower_bounds_list[i][0]] = int(round(probs.value[i] * domain_size))
+	return (max_entropy_point, max_entropy)
 
 def get_min_entropy_SLSQP(upper_lower_bounds, domain_size):
 	initial_guess = []
@@ -939,7 +970,7 @@ def get_min_entropy_SLSQP(upper_lower_bounds, domain_size):
 
 	min_entropy_point = {}
 	for i in range(len(cost_list)):
-		min_entropy_point[cost_list[i]] = int(res.x[i] * domain_size)
+		min_entropy_point[cost_list[i]] = int(round(res.x[i] * domain_size))
 
 	return (res.x, res.fun)
 
@@ -987,7 +1018,7 @@ def get_min_entropy_polyhedron(upper_lower_bounds, domain_size):
 	min_entropy_point = {}
 	last_count = domain_size
 	for i in range(len(upper_lower_bounds_list) - 1):
-		count = int(min_entropy_prob_point[i + 1].numerator / min_entropy_prob_point[i + 1].denominator * domain_size)
+		count = int(round(min_entropy_prob_point[i + 1].numerator / min_entropy_prob_point[i + 1].denominator * domain_size))
 		min_entropy_point[upper_lower_bounds_list[i][0]] = count
 		last_count -= count
 
@@ -1062,7 +1093,8 @@ if __name__ == '__main__':
 			print('\n')
 		except ZeroDivisionError:
 			SearchMCFail+=1
-		except ValueError:
+		except ValueError as e:
+			print (e)
 			SearchMCFail+=1
 		
 	print("SearchMCFail", SearchMCFail)
