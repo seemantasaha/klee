@@ -33,32 +33,29 @@ def calculate_domain_size(directory):
 					words = line.split()
 					if len(words) > 0 and words[0] == "ASSERT(":
 						all_var_names.add(words[1])
-	#print(all_var_names)
-	#print(256**len(all_var_names))
 	return 256**len(all_var_names)
 
 
 def model_count_SearchMC(file):
 	global all_var_names
 	global total_solving_time
-	f = open(file, "r")
+	#f = open(file, "r")
 	#cost = f.readline()
-	og_constraint = f.read()
-	f.close()
-	constraint_lines = og_constraint.split('\n')
-	new_constraint_lines = []
-	for i in range(len(constraint_lines)):
+	#og_constraint = f.read()
+	#f.close()
+	#constraint_lines = og_constraint.split('\n')
+	#new_constraint_lines = []
+	#for i in range(len(constraint_lines)):
 		#print(constraint_lines[i])
-		new_constraint_lines.append(constraint_lines[i])
-		if constraint_lines[i].startswith("(declare-fun") and not constraint_lines[i + 1].startswith("(declare-fun"):
-			new_constraint_lines.append("(declare-fun pad () (_ BitVec 8) )")
-		elif constraint_lines[i].startswith("(assert") and not constraint_lines[i + 1].startswith("(assert"):
-			new_constraint_lines.append("(assert ( = (_ bv0 8) pad ) ) ")
-	new_constraint = "\n".join(new_constraint_lines)
-	#print(new_constraint, "\n\n\n")
-	f = open(file, "w")
-	f.write(new_constraint)
-	f.close()
+	#	new_constraint_lines.append(constraint_lines[i])
+	#	if constraint_lines[i].startswith("(declare-fun") and not constraint_lines[i + 1].startswith("(declare-fun") and "pad" not in constraint_lines[1]:
+	#		new_constraint_lines.append("(declare-fun pad () (_ BitVec 8) )")
+	#	elif constraint_lines[i].startswith("(assert") and not constraint_lines[i + 1].startswith("(assert") and "pad" not in constraint_lines[1]:
+	#		new_constraint_lines.append("(assert ( = (_ bv0 8) pad ) ) ")
+	#new_constraint = "\n".join(new_constraint_lines)
+	#f = open(file, "w")
+	#f.write(new_constraint)
+	#f.close()
 	var_names = set()
 	assert_var_names = set()
 	process = subprocess.Popen(["./stp-2.1.2", "-p", "--disable-simplifications", "--disable-cbitp", "--disable-equality" ,"-a", "-w", "--output-CNF",  "--minisat", file], stdout = subprocess.PIPE)
@@ -68,39 +65,37 @@ def model_count_SearchMC(file):
 	for line in lines:
 		words = line.split()
 		if len(words) > 0 and words[0] == "VarDump:" and not words[1].startswith("STP__IndexVariables_"):
-			#print(words[1])
 			var_names.add(words[1])
 	output_names = " "
 	for var_name in var_names:
 		output_names += "-output_name=" + var_name + " "
-	process = subprocess.Popen(["./SearchMC.pl", "-input_type=smt", "-cl=0.95" ,"-thres=2"] + output_names.split() + [file], stdout = subprocess.PIPE)
+	process = subprocess.Popen(["./SearchMC.pl", "-input_type=smt", "-cl=0.95" ,"-thres=0.5"] + output_names.split() + [file], stdout = subprocess.PIPE)
 	result = process.communicate()[0].decode('utf-8')
-	lines = result.split('\n');
-	f = open(file, "w")
-	f.write(og_constraint)
-	f.close()
+	lines = result.split('\n')
+	#f = open(file, "w")
+	#f.write(og_constraint)
+	#f.close()
 	upper_bound = 0
 	lower_bound = 0
 	for line in lines:
 		l = line.split();
 		if len(l) > 0:
-			if l[1] == "Upper":
-				upper_bound = l[-1];
+			if l[1] == "Sound" and l[2] == "Upper":
+				upper_bound = l[-3]
 				upper_bound = int(2**float(upper_bound))
-			elif l[1] == "Lower":
-				lower_bound = l[-1];
+			if l[1] == "Sound" and l[2] == "Lower":
+				lower_bound = l[-3]
 				lower_bound = int(2**float(lower_bound))
 			elif l[1] == "Exact":
 				lower_bound = int(l[-1])
 				upper_bound = int(l[-1])
 			elif l[1] == "Running":
 				runtime = float(l[-1])
-				#print("Solving time:", runtime)
 				total_solving_time += runtime
-	#print("diff", len(all_var_names) - len(var_names))
 	#print(og_constraint)
 	#print(var_names)
-	var_names.remove("pad")
+	#if "pad" in var_names:
+	#	var_names.remove("pad")
 	return (lower_bound * ((2 ** 8) ** (len(all_var_names) - len(var_names))), upper_bound * ((2 ** 8) ** (len(all_var_names) - len(var_names))))
 
 
@@ -109,7 +104,6 @@ def get_observation_constraints(directory):
 	observationConstraints = {}
 	for root,_,files in os.walk(directory):
 		for file in files:
-			#print(file)
 			if file[-4:] == "smt2":
 				abs_path = os.path.abspath(os.path.join(root, file))
 				f = open(abs_path, "r")
@@ -371,7 +365,7 @@ def get_min_entropy_standard_deviation(upper_lower_bounds, domain_size):
 
 			if len(l) == 0:
 				print("Incorrect counts given by SearchMC:", upper_lower_bounds)
-			avg_diff = int(diff/len(l))
+			avg_diff = diff//len(l)
 			if second_min_diff_between_count_and_avg != -1:
 				diff_min_second = second_min_diff_between_count_and_avg - min_diff_between_count_and_avg
 			else:
@@ -430,7 +424,7 @@ def get_min_entropy_standard_deviation(upper_lower_bounds, domain_size):
 
 			if len(l) == 0:
 				print("Incorrect counts given by SearchMC:",upper_lower_bounds)
-			avg_diff = int(diff/len(l))
+			avg_diff = diff//len(l)
 
 			if second_min_diff_between_count_and_avg != -1:
 				diff_min_second = second_min_diff_between_count_and_avg - min_diff_between_count_and_avg
@@ -460,9 +454,139 @@ def get_min_entropy_standard_deviation(upper_lower_bounds, domain_size):
 	#print("Standard deviation method end point:", counts)
 	return (counts, min_entropy)
 
+#################Hill climbing method (deterministic)#####################
 
+def get_next_neighbor_max_deterministic(current_counts, upper_lower_bounds, domain_size, current_entropy):
+	max_neighbor_entropy = current_entropy
+	max_neighbor = current_counts.copy()
+
+	for i in range(len(current_counts)):
+		neighbor = current_counts.copy()
+		cost = current_counts[i][0]
+		count = current_counts[i][1]
+		if count > upper_lower_bounds[cost][0]:
+			dec_count = count - 1
+			for j in range(i + 1, len(current_counts)):
+				neighbor_cost = current_counts[j][0]
+				neighbor_count = current_counts[j][1]
+				if neighbor_count < upper_lower_bounds[neighbor_cost][1]:
+					inc_neighbor_count = neighbor_count + 1
+					neighbor[i] = (cost, dec_count)
+					neighbor[j] = (neighbor_cost, inc_neighbor_count)
+					entropy = 0
+					for k in range(len(neighbor)):
+						entropy += -1 * neighbor[k][1]/domain_size * math.log(neighbor[k][1]/domain_size, 2)
+					if entropy > max_neighbor_entropy:
+						max_neighbor_entropy = entropy
+						max_neighbor = neighbor.copy()
+						#return (max_neighbor, max_neighbor_entropy)
+					neighbor = current_counts.copy()
+		
+		if count < upper_lower_bounds[cost][1]:
+			inc_count = count + 1
+			for j in range(i + 1, len(current_counts)):
+				neighbor_cost = current_counts[j][0]
+				neighbor_count = current_counts[j][1]
+				if neighbor_count > upper_lower_bounds[neighbor_cost][0]:
+					dec_neighbor_count = neighbor_count - 1
+					neighbor[i] = (cost, inc_count)
+					entropy = 0
+					neighbor[j] = (neighbor_cost, dec_neighbor_count)
+					for k in range(len(neighbor)):
+						entropy += -1 * neighbor[k][1]/domain_size * math.log(neighbor[k][1]/domain_size, 2)
+					if entropy > max_neighbor_entropy:
+						max_neighbor_entropy = entropy
+						max_neighbor = neighbor.copy()
+						#return (max_neighbor, max_neighbor_entropy)
+					neighbor = current_counts.copy()
+	#print(max_neighbor)
+	return (max_neighbor, max_neighbor_entropy)
+
+def get_max_entropy_hill_climbing_deterministic(upper_lower_bounds, domain_size):
+	current_counts_dict, current_entropy = get_max_entropy_standard_deviation(upper_lower_bounds, domain_size)
+	current_counts = []
+	for cost in current_counts_dict:
+		current_counts.append((cost, current_counts_dict[cost]))
+
+	while True:
+		#print("current_counts:", current_counts)
+		neighbor = get_next_neighbor_max_deterministic(current_counts, upper_lower_bounds, domain_size, current_entropy)
+		if neighbor[1] <= current_entropy:
+			max_entropy = current_entropy
+			break
+		current_counts = neighbor[0]
+		current_entropy = neighbor[1]
+	#print("Hill climbing end point:", current_counts)
+	curr_counts_dict = {}
+	for cost, counts in current_counts:
+		current_counts_dict[cost] = counts
+	return (current_counts_dict, max_entropy)
+
+def get_next_neighbor_min_deterministic(current_counts, upper_lower_bounds, domain_size, current_entropy):
+	min_neighbor_entropy = current_entropy
+	min_neighbor = current_counts.copy()
+
+	for i in range(len(current_counts)):
+		neighbor = current_counts.copy()
+		cost = current_counts[i][0]
+		count = current_counts[i][1]
+		if count > upper_lower_bounds[cost][0]:
+			dec_count = count - 1
+			for j in range(i + 1, len(current_counts)):
+				neighbor_cost = current_counts[j][0]
+				neighbor_count = current_counts[j][1]
+				if neighbor_count < upper_lower_bounds[neighbor_cost][1]:
+					inc_neighbor_count = neighbor_count + 1
+					neighbor[i] = (cost, dec_count)
+					neighbor[j] = (neighbor_cost, inc_neighbor_count)
+					entropy = 0
+					for k in range(len(neighbor)):
+						entropy += -1 * neighbor[k][1]/domain_size * math.log(neighbor[k][1]/domain_size, 2)
+					if entropy < min_neighbor_entropy:
+						min_neighbor_entropy = entropy
+						min_neighbor = neighbor.copy()
+					neighbor = current_counts.copy()
+		
+		if count < upper_lower_bounds[cost][1]:
+			inc_count = count + 1
+			for j in range(i + 1, len(current_counts)):
+				neighbor_cost = current_counts[j][0]
+				neighbor_count = current_counts[j][1]
+				if neighbor_count > upper_lower_bounds[neighbor_cost][0]:
+					dec_neighbor_count = neighbor_count - 1
+					neighbor[i] = (cost, inc_count)
+					entropy = 0
+					neighbor[j] = (neighbor_cost, dec_neighbor_count)
+					for k in range(len(neighbor)):
+						entropy += -1 * neighbor[k][1]/domain_size * math.log(neighbor[k][1]/domain_size, 2)
+					if entropy < min_neighbor_entropy:
+						min_neighbor_entropy = entropy
+						min_neighbor = neighbor.copy()
+					neighbor = current_counts.copy()
+	return (min_neighbor, min_neighbor_entropy)
+
+def get_min_entropy_hill_climbing_deterministic(upper_lower_bound, domain_size):
+	current_counts_dict, current_entropy = get_max_entropy_standard_deviation(upper_lower_bounds, domain_size)
+	current_counts = []
+	for cost in current_counts_dict:
+		current_counts.append((cost, current_counts_dict[cost]))
+
+	while True:
+		#print("current_counts:", current_counts)
+		neighbor = get_next_neighbor_min_deterministic(current_counts, upper_lower_bound, domain_size, current_entropy)
+		if neighbor[1] >= current_entropy:
+			min_entropy = current_entropy
+			break
+		current_counts = neighbor[0]
+		current_entropy = neighbor[1]
+	#print("Hill climbing end point:", current_counts)
+	curr_counts_dict = {}
+	for cost, counts in current_counts:
+		current_counts_dict[cost] = counts
+	return (current_counts_dict, min_entropy)
+
+'''
 #################Hill climbing method (random)#####################
-
 def get_next_neighbor_max_random(current_counts, upper_lower_bounds, domain_size, current_entropy):
 	max_neighbor_entropy = current_entropy
 	max_neighbor = current_counts.copy()
@@ -634,7 +758,7 @@ def get_min_entropy_hill_climbing_random(upper_lower_bounds, domain_size):
 	for i in range(len(current_counts)):
 		min_entropy_point[current_counts[i][0]] = current_counts[i][1]
 	return (min_entropy_point, min_entropy)
-
+'''
 
 #===========================Simulated annealing method======================#
 
@@ -770,93 +894,9 @@ def get_min_entropy_SA(upper_lower_bounds, domain_size):
 		min_entropy_point[current_counts[i][0]] = current_counts[i][1]
 	return (min_entropy_point, current_entropy)
 
-'''
-def get_next_neighbor_max_deterministic(current_counts, upper_lower_bound, domain_size, current_entropy):
-	max_neighbor_entropy = current_entropy
-	max_neighbor = current_counts.copy()
 
-	for i in range(len(current_counts)):
-		neighbor = current_counts.copy()
-		cost = current_counts[i][0]
-		count = current_counts[i][1]
-		if count > upper_lower_bound[cost][0]:
-			dec_count = count - 1
-			for j in range(i + 1, len(current_counts)):
-				neighbor_cost = current_counts[j][0]
-				neighbor_count = current_counts[j][1]
-				if neighbor_count < upper_lower_bound[neighbor_cost][1]:
-					inc_neighbor_count = neighbor_count + 1
-					neighbor[i] = (cost, dec_count)
-					neighbor[j] = (neighbor_cost, inc_neighbor_count)
-					entropy = 0
-					for k in range(len(neighbor)):
-						entropy += -1 * neighbor[k][1]/domain_size * math.log(neighbor[k][1]/domain_size, 2)
-					if entropy > max_neighbor_entropy:
-						max_neighbor_entropy = entropy
-						max_neighbor = neighbor.copy()
-						#return (max_neighbor, max_neighbor_entropy)
-					neighbor = current_counts.copy()
-		
-		if count < upper_lower_bound[cost][1]:
-			inc_count = count + 1
-			for j in range(i + 1, len(current_counts)):
-				neighbor_cost = current_counts[j][0]
-				neighbor_count = current_counts[j][1]
-				if neighbor_count > upper_lower_bound[neighbor_cost][0]:
-					dec_neighbor_count = neighbor_count - 1
-					neighbor[i] = (cost, inc_count)
-					entropy = 0
-					neighbor[j] = (neighbor_cost, dec_neighbor_count)
-					for k in range(len(neighbor)):
-						entropy += -1 * neighbor[k][1]/domain_size * math.log(neighbor[k][1]/domain_size, 2)
-					if entropy > max_neighbor_entropy:
-						max_neighbor_entropy = entropy
-						max_neighbor = neighbor.copy()
-						#return (max_neighbor, max_neighbor_entropy)
-					neighbor = current_counts.copy()
-	#print(max_neighbor)
-	return (max_neighbor, max_neighbor_entropy)
 
-def get_max_entropy_hill_climbing_deterministic(upper_lower_bound, domain_size):
-	counts = {}
-	avg = int(domain_size/len(upper_lower_bound))
-	sum_counts = 0
-	max_entropy = 0
-	sum_var = 0
-	s = z3.Solver()
-	var_list = {}
-	for cost in upper_lower_bound:
-		temp = z3.Int("c" + str(cost))
-		lower_bound = upper_lower_bound[cost][0]
-		upper_bound = upper_lower_bound[cost][1]
-		s.add(temp >= lower_bound)
-		s.add(temp <= upper_bound)
-		sum_var += temp;
-		var_list[cost] = temp;
-	s.add(sum_var == domain_size)
-	s.check()
-	m = s.model();
-	for cost in upper_lower_bound:
-		counts[cost] = int(str(m[var_list[cost]]))
-	current_counts = []
-	for cost in counts:
-		current_counts.append((cost, counts[cost]))
-	#print(upper_lower_bound)
-	#print("Hill climbing starting point:", current_counts)
-	current_entropy = 0
-	for i in range(len(current_counts)):
-		current_entropy += -1 * current_counts[i][1]/domain_size * math.log(current_counts[i][1]/domain_size, 2)
-	while True:
-		#print("current_counts:", current_counts)
-		neighbor = get_next_neighbor_max_deterministic(current_counts, upper_lower_bound, domain_size, current_entropy)
-		if neighbor[1] == current_entropy:
-			max_entropy = current_entropy
-			break
-		current_counts = neighbor[0]
-		current_entropy = neighbor[1]
-	#print("Hill climbing end point:", current_counts)
-	return (current_counts, max_entropy)
-'''
+
 
 #===========================Concave optimization method======================#
 
@@ -1068,8 +1108,8 @@ if __name__ == '__main__':
 			min_entropy_stddev = get_min_entropy_standard_deviation(upper_lower_bounds, domain_size)
 			print("Max entropy (stddev): {}, Min entropy (stddev): {}".format(max_entropy_stddev[1], min_entropy_stddev[1]))
 
-			max_entropy_hill = get_max_entropy_hill_climbing_random(upper_lower_bounds, domain_size)
-			min_entropy_hill = get_min_entropy_hill_climbing_random(upper_lower_bounds, domain_size)
+			max_entropy_hill = get_max_entropy_hill_climbing_deterministic(upper_lower_bounds, domain_size)
+			min_entropy_hill = get_min_entropy_hill_climbing_deterministic(upper_lower_bounds, domain_size)
 			print("Max entropy (hill climbing): {}, Min entropy (hill climbing): {}".format(max_entropy_hill[1], min_entropy_hill[1]))
 
 			max_entropy_SA = get_max_entropy_SA(upper_lower_bounds, domain_size)
