@@ -35,6 +35,15 @@ def calculate_domain_size(directory):
 						all_var_names.add(words[1])
 	return 256**len(all_var_names)
 
+def get_obs_SearchMC(file):
+	process = subprocess.Popen(["./stp-2.1.2", "-p", "--disable-simplifications", "--disable-cbitp", "--disable-equality" ,"-a", "-w", "--output-CNF",  "--minisat", file], stdout = subprocess.PIPE)
+	result = process.communicate()[0].decode('utf-8')
+	print(result)
+	lines = result.split('\n');
+	for line in lines:
+		if "ASSERT" in line and "a[0x00000000]" in line and " = " in line and " )" in line:
+			return line.split(" = ")[1].split(" )")[0]
+	return ""
 
 def model_count_SearchMC(file):
 	global all_var_names
@@ -110,7 +119,13 @@ def get_observation_constraints(directory):
 				cost = f.readline()
 				actual_constraint = f.read()
 				f.close()
-				cost = int(cost[1:])
+				#cost = int(cost[1:])
+				print(abs_path)
+				c = get_obs_SearchMC(abs_path)
+				if c != "":
+					cost = int(c, 16)
+				else:
+					cost = 0
 				count = model_count_SearchMC(abs_path)
 				#print(all_var_names)
 				if cost in observationConstraints:
@@ -1096,47 +1111,50 @@ if __name__ == '__main__':
 	hill_max_list = []
 	hill_min_list = []
 	time_list = []
-	while len(stddev_max_list) < 3:
-		start_time = time.time()
-		try:
-			observationConstraints = get_observation_constraints(klee_output_dir[len('-output-dir='):])
-			print("Model countng time:", time.time() - start_time)
-			upper_lower_bounds = get_upper_lower_bounds(observationConstraints)
-			print("upper and lower bounds given by SearchMC:", upper_lower_bounds)
+	#while len(stddev_max_list) < 3:
+	#	start_time = time.time()
+	try:
+		observationConstraints = get_observation_constraints(klee_output_dir[len('-output-dir='):])
+		print("Model countng time:", time.time() - start_time)
+		upper_lower_bounds = get_upper_lower_bounds(observationConstraints)
+		print("upper and lower bounds given by SearchMC:", upper_lower_bounds)
+		print("Size: ", len(upper_lower_bounds))
 
-			max_entropy_stddev = get_max_entropy_standard_deviation(upper_lower_bounds, domain_size)
-			min_entropy_stddev = get_min_entropy_standard_deviation(upper_lower_bounds, domain_size)
-			print("Max entropy (stddev): {}, Min entropy (stddev): {}".format(max_entropy_stddev[1], min_entropy_stddev[1]))
+		#max_entropy_stddev = get_max_entropy_standard_deviation(upper_lower_bounds, domain_size)
+		#min_entropy_stddev = get_min_entropy_standard_deviation(upper_lower_bounds, domain_size)
+		#print("Max entropy (stddev): {}, Min entropy (stddev): {}".format(max_entropy_stddev[1], min_entropy_stddev[1]))
 
-			max_entropy_hill = get_max_entropy_hill_climbing_deterministic(upper_lower_bounds, domain_size)
-			min_entropy_hill = get_min_entropy_hill_climbing_deterministic(upper_lower_bounds, domain_size)
-			print("Max entropy (hill climbing): {}, Min entropy (hill climbing): {}".format(max_entropy_hill[1], min_entropy_hill[1]))
+		max_entropy_hill = get_max_entropy_hill_climbing_deterministic(upper_lower_bounds, domain_size)
+		#min_entropy_hill = get_min_entropy_hill_climbing_deterministic(upper_lower_bounds, domain_size)
+		print("Max entropy (hill climbing): {}".format(max_entropy_hill[1]))
+		#print("Max entropy (hill climbing): {}, Min entropy (hill climbing): {}".format(max_entropy_hill[1], min_entropy_hill[1]))
 
-			max_entropy_SA = get_max_entropy_SA(upper_lower_bounds, domain_size)
-			min_entropy_SA = get_min_entropy_SA(upper_lower_bounds, domain_size)
-			print("Max entropy (simulated annealing): {}, Min entropy (simulated annealing): {}".format(max_entropy_SA[1], min_entropy_SA[1]))
+		#max_entropy_SA = get_max_entropy_SA(upper_lower_bounds, domain_size)
+		#min_entropy_SA = get_min_entropy_SA(upper_lower_bounds, domain_size)
+		#print("Max entropy (simulated annealing): {}, Min entropy (simulated annealing): {}".format(max_entropy_SA[1], min_entropy_SA[1]))
 
-			max_entropy_SLSQP = get_max_entropy_SLSQP(upper_lower_bounds, domain_size)
-			min_entropy_polyhedron = get_min_entropy_polyhedron(upper_lower_bounds, domain_size)
-			print("Max entropy (SLSQP): {}, Min entropy (polyhedron): {}".format(max_entropy_SLSQP[1], min_entropy_polyhedron[1]))
+		#max_entropy_SLSQP = get_max_entropy_SLSQP(upper_lower_bounds, domain_size)
+		min_entropy_polyhedron = get_min_entropy_polyhedron(upper_lower_bounds, domain_size)
+		print("Min entropy (polyhedron): {}".format(min_entropy_polyhedron[1]))
+		#print("Max entropy (SLSQP): {}, Min entropy (polyhedron): {}".format(max_entropy_SLSQP[1], min_entropy_polyhedron[1]))
 
-			print("Max entropy point (stddev): {}, Min entropy point (stddev): {}".format(max_entropy_stddev[0], min_entropy_stddev[0]))
-			print("Max entropy point (hill climbing): {}, Min entropy point (hill climbing): {}".format(max_entropy_hill[0], min_entropy_hill[0]))
-			print("Max entropy point (simulated annealing): {}, Min entropy point (simulated annealing): {}".format(max_entropy_SA[0], min_entropy_SA[0]))
-			print("Max entropy point (SLSQP): {}, Min entropy point (polyhedron): {}".format(max_entropy_SLSQP[0], min_entropy_polyhedron[0]))
+		#print("Max entropy point (stddev): {}, Min entropy point (stddev): {}".format(max_entropy_stddev[0], min_entropy_stddev[0]))
+		#print("Max entropy point (hill climbing): {}, Min entropy point (hill climbing): {}".format(max_entropy_hill[0], min_entropy_hill[0]))
+		#print("Max entropy point (simulated annealing): {}, Min entropy point (simulated annealing): {}".format(max_entropy_SA[0], min_entropy_SA[0]))
+		#print("Max entropy point (SLSQP): {}, Min entropy point (polyhedron): {}".format(max_entropy_SLSQP[0], min_entropy_polyhedron[0]))
 
-			stddev_max_list.append(max_entropy_stddev[1])
-			stddev_min_list.append(min_entropy_stddev[1])
-			end_time = time.time()
-			time_list.append(end_time - start_time)
-			print("Total time:", end_time - start_time, "s")
-			print('\n')
-		except ZeroDivisionError:
-			SearchMCFail+=1
-		except ValueError as e:
-			print (e)
-			SearchMCFail+=1
-		
+		#stddev_max_list.append(max_entropy_stddev[1])
+		#stddev_min_list.append(min_entropy_stddev[1])
+		end_time = time.time()
+		time_list.append(end_time - start_time)
+		print("Total time:", end_time - start_time, "s")
+		print('\n')
+	except ZeroDivisionError:
+		SearchMCFail+=1
+	except ValueError as e:
+		print (e)
+		SearchMCFail+=1
+	
 	print("SearchMCFail", SearchMCFail)
 	#print("stddev_hill_mismatch", stddev_hill_mismatch)
 	print("Avg Max (stddev): {} Avg Min (stddev): {}".format(sum(stddev_max_list)/3, sum(stddev_min_list)/3))
