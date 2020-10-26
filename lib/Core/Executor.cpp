@@ -4211,6 +4211,7 @@ void Executor::getConstraintLog(const ExecutionState &state, std::string &res,
       res = info.str();
       res.insert(0, ";" + std::to_string(state.steppedInstructions) + "\n");
     } else{
+      //ABC Upper Bound constraint
       Query query(state.constraints, ConstantExpr::alloc(0, Expr::Bool));
       
       // We negate the Query Expr because in KLEE queries are solved
@@ -4231,13 +4232,34 @@ void Executor::getConstraintLog(const ExecutionState &state, std::string &res,
       char *log = solver->getConstraintLog(tmp_query);
       //std::cout<<"Printing width: "<<solver->getVarWidth(query)<<"\n";
       res = std::string(log);
-      std::cout<<"Printing original pc: "<< res<<std::endl;
+      //std::cout<<"Printing original pc: "<< res<<std::endl;
       res = remove_let_binding(res);
       std::set<std::string> var_name_set;
       res = remove_array_definition_int(res, var_name_set);
-      std::cout<<"Printing translated pc: \n"<<res<<std::endl;
+      res.insert(0, ";" + std::to_string(state.steppedInstructions) + "\n");
+      //std::cout<<"Printing translated pc: \n"<<res<<std::endl;
 
       free(log);
+
+      //ABC lower bound constraint
+      ref<Expr> notQueryAssert = NotExpr::create(queryAssert);
+
+      std::vector<ref<Expr> > new_not_constraints = {notQueryAssert};
+      ExecutionState tmp_not_state = state;
+      tmp_not_state.constraints.replace_constraints(new_not_constraints);
+      Query tmp_not_query(tmp_not_state.constraints, ConstantExpr::alloc(0, Expr::Bool));
+      //std::cout<<"HERE\n";
+      char *not_log = solver->getConstraintLog(tmp_not_query);
+      //std::cout<<"Printing width: "<<solver->getVarWidth(query)<<"\n";
+      std::string not_res = std::string(not_log);
+      //std::cout<<"Printing original pc: "<< res<<std::endl;
+      not_res = remove_let_binding(not_res);
+      std::set<std::string> not_var_name_set;
+      not_res = remove_array_definition_int(not_res, not_var_name_set);
+      res.insert(res.length(), "\n----\n" + not_res);
+      //std::cout<<"Printing translated pc: \n"<<res<<std::endl;
+
+      free(not_log);
     }
   } break;
 
@@ -4297,11 +4319,11 @@ void Executor::collectPathConstraintsWithCost(const ExecutionState &state) {
 }
 
 void Executor::calculateInfoLeak() {
-  int threshold = 10; /// we need to add an option for the threshold
+  int threshold = 6; /// we need to add an option for the threshold
   int currentInterval, currentCost;
 
   /// merge path constraints with non-distinguishable observations (costs)
-  //std::cout << "Number of observations:" << observationConstraints.size() << std::endl;
+  std::cout << "Number of observations:" << observationConstraints.size() << std::endl;
   
   if (observationConstraints.size() <= 0) {
     std::cout << "No information leakage as there is no observations\n";
@@ -4312,6 +4334,8 @@ void Executor::calculateInfoLeak() {
   currentInterval = itr->first;
   std::vector<std::pair<std::string,Vlab::Theory::BigInteger>> pathConditions = itr->second;
 
+  std::map<int,std::vector<std::pair<std::string,Vlab::Theory::BigInteger>>> newObsCons;
+
   while (itr != observationConstraints.end()) {
     currentCost = itr->first;
 
@@ -4320,35 +4344,29 @@ void Executor::calculateInfoLeak() {
 
     if ( (currentCost > currentInterval) && (currentCost < currentInterval + threshold) ) {
       for (std::pair<std::string,Vlab::Theory::BigInteger> pc: observationConstraints.at(currentCost)) {
-        //std::cout << std::endl << pc.first << std::endl;
+        std::cout << std::endl << pc.first << std::endl;
         pathConditions.push_back(pc);
       }
-      //std::cout << "\nRemoved for current cost\n";
-      observationConstraints.erase(currentCost);
-      //std::cout << "\nNumber of paths: " << pathConditions.size() << std::endl;
-      //std::vector<std::pair<std::string,Vlab::Theory::BigInteger>>::iterator vitr = pathConditions.begin();
-      //while(vitr != pathConditions.end()) {
-      //  std::cout << std::endl << vitr->first << std::endl;
-      //  vitr++;
-      //}
-      observationConstraints.erase(currentInterval);
-      observationConstraints.insert(std::pair<int, std::vector<std::pair<std::string,Vlab::Theory::BigInteger>>>(currentInterval, pathConditions));
+      //observationConstraints.erase(currentCost);
+      //observationConstraints.erase(currentInterval);
+      //observationConstraints.insert(std::pair<int, std::vector<std::pair<std::string,Vlab::Theory::BigInteger>>>(currentInterval, pathConditions));
     } else {
       currentInterval = currentCost;
       pathConditions = observationConstraints.at(currentInterval);
       //std::cout << "\nNumber of paths: " << pathConditions.size() << std::endl;
     }
+    newObsCons.insert(std::pair<int, std::vector<std::pair<std::string,Vlab::Theory::BigInteger>>>(currentInterval, pathConditions));
 
     itr++;
   }
 
   double entropy = 0.0;
     
-  std::cout << "\nNumber of observations: " << observationConstraints.size() << std::endl;
+  std::cout << "\nNew Number of observations: " << newObsCons.size() << std::endl;
 
-  std::map<int,std::vector<std::pair<std::string,Vlab::Theory::BigInteger>>>::iterator it = observationConstraints.begin();
+  std::map<int,std::vector<std::pair<std::string,Vlab::Theory::BigInteger>>>::iterator it = newObsCons.begin();
 
-  while (it != observationConstraints.end()) {
+  while (it != newObsCons.end()) {
     std::cout << "\nCost: " << it->first << std::endl;
     std::vector<std::pair<std::string,Vlab::Theory::BigInteger>> cons = it->second;
     //std::cout << "\nNumber of paths: " << cons.size() << std::endl;

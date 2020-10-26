@@ -18,6 +18,99 @@ total_solving_time = 0
 
 ############################Get model counts##########################
 
+def calculate_domain_size_ABC(directory):
+	for root,_,files in os.walk(directory):
+		for file in files:
+			if file[-4:] == "smt2":
+				abs_path = os.path.abspath(os.path.join(root, file))
+				break
+
+	f = open(abs_path, "r")
+	cons = f.read();
+	f.close()
+
+	cons = cons.split("----")[0]
+
+	num_var = cons.count("declare-fun")
+
+	return 2**(8 * num_var)
+
+'''	
+	dom_cons = cons.split("(assert ")[0] + "(check-sat)"
+	dom_abs_path = os.path.abspath(os.path.join(root, "domain.smt2"))
+	f = open(dom_abs_path,"w")
+	f.write(dom_cons)
+	f.close()
+	
+	process = subprocess.Popen(["abc", "-i", dom_abs_path, "-bi", "8"], stdout = subprocess.PIPE)
+	result = process.communicate()[0].decode('utf-8')
+	process.terminate()
+	#print(result)
+	count = 0
+	lines = result.split('\n');
+	#for line in lines:
+	#	if "report bound: " in line and "count: " in line:
+	#		count = int(line.split("count: ")[1].split(" ")[0])
+	if lines[0] == "sat":
+		count = int(lines[1])
+		print("Domain count: ", count)
+
+	return count
+'''
+
+def model_count_ABC(file, domain_size):
+	global all_var_names
+	global total_solving_time
+
+	lower_bound = 0
+	upper_bound = 0
+
+	f = open(file, "r")
+	bound_cons = f.read();
+	f.close()
+
+	bound_cons_arr = bound_cons.split("----")
+	upper_bound_cons = bound_cons_arr[0]
+	lower_bound_cons = bound_cons_arr[1]
+
+	f = open("temp_lower_bound_cons.smt2","w")
+	f.write(lower_bound_cons)
+	f.close()
+
+	f = open("temp_upper_bound_cons.smt2","w")
+	f.write(upper_bound_cons)
+	f.close()
+
+	#upper_bound
+	process = subprocess.Popen(["abc", "-i", "temp_upper_bound_cons.smt2", "-bi", "8"], stdout = subprocess.PIPE)
+	result = process.communicate()[0].decode('utf-8')
+	process.terminate()
+	#print(result)
+	lines = result.split('\n');
+	
+	if lines[0] == "sat":
+		upper_bound = int(lines[1])
+		print("Model count upper bound: ", upper_bound)
+
+	#lower_bound
+	process = subprocess.Popen(["abc", "-i", "temp_lower_bound_cons.smt2", "-bi", "8"], stdout = subprocess.PIPE)
+	result = process.communicate()[0].decode('utf-8')
+	process.terminate()
+	#print(result)
+	lines = result.split('\n');
+	
+	if lines[0] == "sat":
+		count = int(lines[1])
+		lower_bound = domain_size - count
+		print(count)
+		print(domain_size)
+		print("Model count lower bound: ", lower_bound)
+
+	#os.remove("temp_lower_bound_cons.smt2")
+	#os.remove("temp_upper_bound_cons.smt2")
+			
+	return(lower_bound, upper_bound)
+
 def calculate_domain_size(directory):
 	global all_var_names
 	for root,_,files in os.walk(directory):
@@ -28,6 +121,7 @@ def calculate_domain_size(directory):
 				var_names = set()
 				process = subprocess.Popen(["./stp-2.1.2", "-p", "--disable-simplifications", "--disable-cbitp", "--disable-equality" ,"-a", "-w", "--output-CNF",  "--minisat", abs_path], stdout = subprocess.PIPE)
 				result = process.communicate()[0].decode('utf-8')
+				process.terminate()
 				lines = result.split('\n');
 				for line in lines:
 					words = line.split()
@@ -38,12 +132,15 @@ def calculate_domain_size(directory):
 def get_obs_SearchMC(file):
 	process = subprocess.Popen(["./stp-2.1.2", "-p", "--disable-simplifications", "--disable-cbitp", "--disable-equality" ,"-a", "-w", "--output-CNF",  "--minisat", file], stdout = subprocess.PIPE)
 	result = process.communicate()[0].decode('utf-8')
+	process.terminate()
 	print(result)
 	lines = result.split('\n');
 	for line in lines:
 		if "ASSERT" in line and "a[0x00000000]" in line and " = " in line and " )" in line:
 			return line.split(" = ")[1].split(" )")[0]
 	return ""
+
+
 
 def model_count_SearchMC(file):
 	global all_var_names
@@ -67,8 +164,9 @@ def model_count_SearchMC(file):
 	#f.close()
 	var_names = set()
 	assert_var_names = set()
-	process = subprocess.Popen(["./stp-2.1.2", "-p", "--disable-simplifications", "--disable-cbitp", "--disable-equality" ,"-a", "-w", "--output-CNF",  "--minisat", file], stdout = subprocess.PIPE)
+	process = subprocess.Popen(["./stp-2.1.2", "-p", "--disable-simplifications", "--disable-cbitp", "--disable-equality" ,"-a", "--minisat", file], stdout = subprocess.PIPE)
 	result = process.communicate()[0].decode('utf-8')
+	process.terminate()
 	#print(result)
 	lines = result.split('\n');
 	for line in lines:
@@ -78,8 +176,10 @@ def model_count_SearchMC(file):
 	output_names = " "
 	for var_name in var_names:
 		output_names += "-output_name=" + var_name + " "
+	print(output_names)
 	process = subprocess.Popen(["./SearchMC.pl", "-input_type=smt", "-cl=0.95" ,"-thres=0.5"] + output_names.split() + [file], stdout = subprocess.PIPE)
 	result = process.communicate()[0].decode('utf-8')
+	process.terminate()
 	lines = result.split('\n')
 	#f = open(file, "w")
 	#f.write(og_constraint)
@@ -109,43 +209,53 @@ def model_count_SearchMC(file):
 
 
 
-def get_observation_constraints(directory):
+def get_observation_constraints(directory, tool, domain_size):
 	observationConstraints = {}
 	for root,_,files in os.walk(directory):
 		for file in files:
-			if file[-4:] == "smt2":
+			if file[-4:] == "smt2" and "domain" not in file:
 				abs_path = os.path.abspath(os.path.join(root, file))
 				f = open(abs_path, "r")
 				cost = f.readline()
 				actual_constraint = f.read()
 				f.close()
-				#cost = int(cost[1:])
-				print(abs_path)
-				c = get_obs_SearchMC(abs_path)
-				if c != "":
-					cost = int(c, 16)
+				cost = int(cost[1:])
+				print(cost)
+				#print(abs_path)
+				#c = get_obs_SearchMC(abs_path)
+				#if c != "":
+				#	cost = int(c, 16)
+				#else:
+				#	cost = 0
+				if tool == "searchMC":
+					count = model_count_SearchMC(abs_path)
 				else:
-					cost = 0
-				count = model_count_SearchMC(abs_path)
+					count = model_count_ABC(abs_path, domain_size)
 				#print(all_var_names)
+				print("Count:", count)
 				if cost in observationConstraints:
 					observationConstraints[cost].append((actual_constraint, count))
 				else:
 					observationConstraints[cost] = [(actual_constraint, count)]
 
+	#print("Number of observations: ", len(observationConstraints))
 	if not bool(observationConstraints):
 		print("No leakage")
 	else:
-		threshold = 3
-		costs = observationConstraints.keys()
+		threshold = 6
+		costs = sorted(observationConstraints.keys())
 		currentInterval = list(costs)[0]
 		pathConditions = observationConstraints[currentInterval]
 
-		for currentCost in observationConstraints.copy():
+		
+		for currentCost in sorted(observationConstraints.copy().keys()):
+			#print("current cost: ", currentCost)
+			#print("current interval: ", currentInterval)
 			if currentCost > currentInterval and currentCost < currentInterval + threshold:
 				pathConditions += observationConstraints[currentCost]
 				observationConstraints.pop(currentCost)
 				observationConstraints[currentInterval] = pathConditions
+				#print("merged")
 			else:
 				currentInterval = currentCost
 				pathConditions = observationConstraints[currentInterval]
@@ -167,6 +277,7 @@ def get_upper_lower_bounds(observationConstraints):
 
 ############Standard deviation method##############
 def get_max_entropy_standard_deviation(upper_lower_bounds, domain_size):
+	print("Domain Size: ", domain_size)
 	counts = {}
 	avg = domain_size//len(upper_lower_bounds)
 	sum_counts = 0
@@ -1082,8 +1193,8 @@ def get_min_entropy_polyhedron(upper_lower_bounds, domain_size):
 
 
 if __name__ == '__main__':
-	start_time = time.time()
 	parser = argparse.ArgumentParser("Connect KLEE with SearchMC")
+	parser.add_argument("--tool", required=True)
 	parser.add_argument("--klee_output_dir", required=True)
 	parser.add_argument("--target")
 	parser.add_argument("--klee_dir")
@@ -1101,10 +1212,18 @@ if __name__ == '__main__':
 	klee_output_dir = "-output-dir=" + klee_output_dir
 	#klee_output_stream = subprocess.Popen([klee_dir, klee_output_dir, '-write-smt2s', target])
 
-	SearchMCFail = 0
-	domain_size = calculate_domain_size(klee_output_dir[len('-output-dir='):])
+	ModelCounterFail = 0
+
+
 	if dict_args["domain_size"] != None:
 		domain_size = int(str(dict_args["domain_size"]))
+	else:
+		if dict_args["tool"] == "abc":
+			domain_size = calculate_domain_size_ABC(klee_output_dir[len('-output-dir='):])
+		else:
+			domain_size = calculate_domain_size(klee_output_dir[len('-output-dir='):])
+
+	print("---------Domain Size: ", domain_size)
 
 	stddev_max_list = []
 	stddev_min_list = []
@@ -1113,51 +1232,81 @@ if __name__ == '__main__':
 	time_list = []
 	#while len(stddev_max_list) < 3:
 	#	start_time = time.time()
-	try:
-		observationConstraints = get_observation_constraints(klee_output_dir[len('-output-dir='):])
-		print("Model countng time:", time.time() - start_time)
-		upper_lower_bounds = get_upper_lower_bounds(observationConstraints)
-		print("upper and lower bounds given by SearchMC:", upper_lower_bounds)
-		print("Size: ", len(upper_lower_bounds))
+	num_of_run = 0
+	global_min_entropy = math.log(domain_size)
+	global_max_entropy = 0.0
 
-		#max_entropy_stddev = get_max_entropy_standard_deviation(upper_lower_bounds, domain_size)
-		#min_entropy_stddev = get_min_entropy_standard_deviation(upper_lower_bounds, domain_size)
-		#print("Max entropy (stddev): {}, Min entropy (stddev): {}".format(max_entropy_stddev[1], min_entropy_stddev[1]))
+	total_time = 0.0
+	elapsed_time = 0.0
+	while num_of_run < 5:
+		try:
+			ModelCounterFail = 0
+			start_time = time.time()
+			if dict_args["tool"] == "abc":
+				observationConstraints = get_observation_constraints(klee_output_dir[len('-output-dir='):],"abc", domain_size)
+			else:
+				observationConstraints = get_observation_constraints(klee_output_dir[len('-output-dir='):],"searchMC", domain_size)
+			
+			print("Model countng time:", time.time() - start_time)
+			#print(observationConstraints)
+			upper_lower_bounds = get_upper_lower_bounds(observationConstraints)
+			print("upper and lower bounds given by Model Counter:", upper_lower_bounds)
+			print("Size: ", len(upper_lower_bounds))
 
-		max_entropy_hill = get_max_entropy_hill_climbing_deterministic(upper_lower_bounds, domain_size)
-		#min_entropy_hill = get_min_entropy_hill_climbing_deterministic(upper_lower_bounds, domain_size)
-		print("Max entropy (hill climbing): {}".format(max_entropy_hill[1]))
-		#print("Max entropy (hill climbing): {}, Min entropy (hill climbing): {}".format(max_entropy_hill[1], min_entropy_hill[1]))
+			#max_entropy_stddev = get_max_entropy_standard_deviation(upper_lower_bounds, domain_size)
+			#min_entropy_stddev = get_min_entropy_standard_deviation(upper_lower_bounds, domain_size)
+			#print("Max entropy (stddev): {}, Min entropy (stddev): {}".format(max_entropy_stddev[1], min_entropy_stddev[1]))
 
-		#max_entropy_SA = get_max_entropy_SA(upper_lower_bounds, domain_size)
-		#min_entropy_SA = get_min_entropy_SA(upper_lower_bounds, domain_size)
-		#print("Max entropy (simulated annealing): {}, Min entropy (simulated annealing): {}".format(max_entropy_SA[1], min_entropy_SA[1]))
+			max_entropy_hill = get_max_entropy_hill_climbing_deterministic(upper_lower_bounds, domain_size)
+			#min_entropy_hill = get_min_entropy_hill_climbing_deterministic(upper_lower_bounds, domain_size)
+			print("Max entropy (hill climbing): {}".format(max_entropy_hill[1]))
+			#print("Max entropy (hill climbing): {}, Min entropy (hill climbing): {}".format(max_entropy_hill[1], min_entropy_hill[1]))
 
-		#max_entropy_SLSQP = get_max_entropy_SLSQP(upper_lower_bounds, domain_size)
-		min_entropy_polyhedron = get_min_entropy_polyhedron(upper_lower_bounds, domain_size)
-		print("Min entropy (polyhedron): {}".format(min_entropy_polyhedron[1]))
-		#print("Max entropy (SLSQP): {}, Min entropy (polyhedron): {}".format(max_entropy_SLSQP[1], min_entropy_polyhedron[1]))
+			#max_entropy_SA = get_max_entropy_SA(upper_lower_bounds, domain_size)
+			#min_entropy_SA = get_min_entropy_SA(upper_lower_bounds, domain_size)
+			#print("Max entropy (simulated annealing): {}, Min entropy (simulated annealing): {}".format(max_entropy_SA[1], min_entropy_SA[1]))
 
-		#print("Max entropy point (stddev): {}, Min entropy point (stddev): {}".format(max_entropy_stddev[0], min_entropy_stddev[0]))
-		#print("Max entropy point (hill climbing): {}, Min entropy point (hill climbing): {}".format(max_entropy_hill[0], min_entropy_hill[0]))
-		#print("Max entropy point (simulated annealing): {}, Min entropy point (simulated annealing): {}".format(max_entropy_SA[0], min_entropy_SA[0]))
-		#print("Max entropy point (SLSQP): {}, Min entropy point (polyhedron): {}".format(max_entropy_SLSQP[0], min_entropy_polyhedron[0]))
+			#max_entropy_SLSQP = get_max_entropy_SLSQP(upper_lower_bounds, domain_size)
+			min_entropy_polyhedron = get_min_entropy_polyhedron(upper_lower_bounds, domain_size)
+			print("Min entropy (polyhedron): {}".format(min_entropy_polyhedron[1]))
+			#print("Max entropy (SLSQP): {}, Min entropy (polyhedron): {}".format(max_entropy_SLSQP[1], min_entropy_polyhedron[1]))
 
-		#stddev_max_list.append(max_entropy_stddev[1])
-		#stddev_min_list.append(min_entropy_stddev[1])
-		end_time = time.time()
-		time_list.append(end_time - start_time)
-		print("Total time:", end_time - start_time, "s")
-		print('\n')
-	except ZeroDivisionError:
-		SearchMCFail+=1
-	except ValueError as e:
-		print (e)
-		SearchMCFail+=1
+			#print("Max entropy point (stddev): {}, Min entropy point (stddev): {}".format(max_entropy_stddev[0], min_entropy_stddev[0]))
+			#print("Max entropy point (hill climbing): {}, Min entropy point (hill climbing): {}".format(max_entropy_hill[0], min_entropy_hill[0]))
+			#print("Max entropy point (simulated annealing): {}, Min entropy point (simulated annealing): {}".format(max_entropy_SA[0], min_entropy_SA[0]))
+			#print("Max entropy point (SLSQP): {}, Min entropy point (polyhedron): {}".format(max_entropy_SLSQP[0], min_entropy_polyhedron[0]))
+
+			#stddev_max_list.append(max_entropy_stddev[1])
+			#stddev_min_list.append(min_entropy_stddev[1])
+			end_time = time.time()
+			elapsed_time = end_time - start_time
+			time_list.append(elapsed_time)
+			print("Time for this run:", elapsed_time, "s")
+			print('\n')
+			if global_max_entropy < max_entropy_hill[1]:
+				global_max_entropy = max_entropy_hill[1]
+
+			if global_min_entropy > min_entropy_polyhedron[1]:
+				global_min_entropy = min_entropy_polyhedron[1]
+
+			total_time += elapsed_time
+
+			num_of_run += 1
+		except ZeroDivisionError:
+			ModelCounterFail+=1
+		except ValueError as e:
+			print (e)
+			ModelCounterFail+=1
+
+		print("Model Counter Fail:", ModelCounterFail)
+		#print("stddev_hill_mismatch", stddev_hill_mismatch)
+		#print("Avg Max (stddev): {} Avg Min (stddev): {}".format(sum(stddev_max_list)/3, sum(stddev_min_list)/3))
+		#print("Avg Max (hill): {} Avg Min (hill): {}".format(sum(hill_max_list)/3, sum(hill_min_list)/3))
+		#print("Avg time: {}".format(sum(time_list)/3))
+		#print("Avg solving time: {}".format(total_solving_time/3))
+
+	print("Minimum entropy after 5 successful run: ", global_min_entropy)
+	print("Maximum entropy after 5 successful run: ", global_max_entropy)
+	print("Average time for each run: ", total_time/5)
 	
-	print("SearchMCFail", SearchMCFail)
-	#print("stddev_hill_mismatch", stddev_hill_mismatch)
-	print("Avg Max (stddev): {} Avg Min (stddev): {}".format(sum(stddev_max_list)/3, sum(stddev_min_list)/3))
-	#print("Avg Max (hill): {} Avg Min (hill): {}".format(sum(hill_max_list)/3, sum(hill_min_list)/3))
-	print("Avg time: {}".format(sum(time_list)/3))
-	print("Avg solving time: {}".format(total_solving_time/3))
+	

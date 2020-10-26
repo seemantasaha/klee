@@ -1,5 +1,5 @@
 #include "klee/klee.h"
-#define N 5
+#define N 4
 
 int search(int hashtable[], unsigned int val){
     int hash = val % N;

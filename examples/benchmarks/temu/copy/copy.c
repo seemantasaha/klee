@@ -6,7 +6,7 @@ int copy (int i) {
 
 	int k, m = 1;
 	
-	for(k=0; k < 4; k++) {
+	for(k=0; k < 32; k++) {
 		if(i & (1<<k))
 			v += 1 * m;
 		m *= 2; 

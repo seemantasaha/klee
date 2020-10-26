@@ -1,6 +1,6 @@
 #include "klee/klee.h"
 
-int copy (int i) {
+int copy (unsigned int i) {
 
 	int base = 2;
 
@@ -24,7 +24,7 @@ int copy (int i) {
 
 
 int main() {
-  int a;
+  unsigned int a;
   klee_make_symbolic(&a, sizeof(a), "a");
   return copy(a);
 } 
