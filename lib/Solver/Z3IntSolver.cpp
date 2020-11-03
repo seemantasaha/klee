@@ -41,6 +41,11 @@ llvm::cl::opt<unsigned>
     Z3VerbosityLevel("debug-z3int-verbosity", llvm::cl::init(0),
                      llvm::cl::desc("Z3 verbosity level (default=0)"));
 }
+
+extern llvm::cl::opt<bool>
+  IncludeRangeCons("include-range",
+          llvm::cl::init(false),
+          llvm::cl::desc("Include range constraints (default=false)"));
 bool wasIntQuery = false;
 
 #include "llvm/Support/ErrorHandling.h"
@@ -249,8 +254,17 @@ char *Z3IntSolverImpl::getConstraintLog(const Query &query) {
 
   ConstantArrayFinder constant_arrays_in_query;
   for (auto const &constraint : query.constraints) {
-    assumptions.push_back(temp_builder.construct(constraint));
-    constant_arrays_in_query.visit(constraint);
+    if (!IncludeRangeCons){
+      try{
+        assumptions.push_back(temp_builder.construct(constraint));
+      } catch(...){
+        const char* str = "";
+        return strdup(str);
+      }
+    } else {
+      assumptions.push_back(temp_builder.construct(constraint));
+      constant_arrays_in_query.visit(constraint);
+    }
   }
 
   // KLEE Queries are validity queries i.e.
