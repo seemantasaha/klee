@@ -82,18 +82,20 @@ def model_count_ABC(file, domain_size):
 	f.close()
 
 	#upper_bound
-	process = subprocess.Popen(["abc", "-i", "temp_upper_bound_cons.smt2", "-bi", "8"], stdout = subprocess.PIPE)
+	process = subprocess.Popen(["abc", "-i", "temp_upper_bound_cons.smt2", "-bi", "8", "--use-unsigned", "-v", "0", "--disable-equivalence", "--precise"], stdout = subprocess.PIPE)
 	result = process.communicate()[0].decode('utf-8')
 	process.terminate()
 	#print(result)
 	lines = result.split('\n');
+
+	print(lines)
 	
 	if lines[0] == "sat":
 		upper_bound = int(lines[1])
 		print("Model count upper bound: ", upper_bound)
 
 	#lower_bound
-	process = subprocess.Popen(["abc", "-i", "temp_lower_bound_cons.smt2", "-bi", "8"], stdout = subprocess.PIPE)
+	process = subprocess.Popen(["abc", "-i", "temp_lower_bound_cons.smt2", "-bi", "8", "--use-unsigned", "-v", "0", "--disable-equivalence", "--precise"], stdout = subprocess.PIPE)
 	result = process.communicate()[0].decode('utf-8')
 	process.terminate()
 	#print(result)
@@ -127,7 +129,9 @@ def calculate_domain_size(directory):
 					words = line.split()
 					if len(words) > 0 and words[0] == "ASSERT(":
 						all_var_names.add(words[1])
-	return 256**len(all_var_names)
+	#print(len(all_var_names))
+	return 256
+	#return 256**len(all_var_names)
 
 def get_obs_SearchMC(file):
 	process = subprocess.Popen(["./stp-2.1.2", "-p", "--disable-simplifications", "--disable-cbitp", "--disable-equality" ,"-a", "-w", "--output-CNF",  "--minisat", file], stdout = subprocess.PIPE)
@@ -242,7 +246,7 @@ def get_observation_constraints(directory, tool, domain_size):
 	if not bool(observationConstraints):
 		print("No leakage")
 	else:
-		threshold = 6
+		threshold = 7
 		costs = sorted(observationConstraints.keys())
 		currentInterval = list(costs)[0]
 		pathConditions = observationConstraints[currentInterval]

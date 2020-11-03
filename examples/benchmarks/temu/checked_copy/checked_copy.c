@@ -1,23 +1,18 @@
 #include "klee/klee.h"
 
-int copy (unsigned int i) {
+int checked_copy (unsigned int i) {
 
-	int base = 2;
-
-	if (i < 4)
-		i = base + i;
-	else
-		i = base;
+	int base = 8;
 
 	int v;
 
-	int k, m = 1;
-	
-	for(k=0; k < 4; k++) {
-		if(i & (1<<k))
-			v += 1 * m;
-		m *= 2; 
-	}
+	if (i < 16)
+		v = base + i;
+	else
+		v = base;
+
+	for(int k = 0; k < v; k++)
+		;
 
 	return v;
 }
@@ -26,6 +21,6 @@ int copy (unsigned int i) {
 int main() {
   unsigned int a;
   klee_make_symbolic(&a, sizeof(a), "a");
-  return copy(a);
+  return checked_copy(a);
 } 
  
