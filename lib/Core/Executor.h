@@ -156,7 +156,7 @@ private:
   std::map<const llvm::GlobalValue*, ref<ConstantExpr> > globalAddresses;
 
   /// Map for observational constraints using cost model of number of instructions executed
-  std::map<int,std::vector<std::pair<std::string,Vlab::Theory::BigInteger>>> observationConstraints;
+  std::map<int,std::vector<std::pair<std::string,Vlab::Theory::BigInteger>>> obsCons;
 
   /// The set of legal function addresses, used to validate function
   /// pointers. We use the actual Function* address as the function address.

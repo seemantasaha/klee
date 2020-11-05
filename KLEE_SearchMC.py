@@ -130,8 +130,9 @@ def calculate_domain_size(directory):
 					if len(words) > 0 and words[0] == "ASSERT(":
 						all_var_names.add(words[1])
 	#print(len(all_var_names))
-	return 256
-	#return 256**len(all_var_names)
+	#return 256
+	#return 256 * 256
+	return 256 ** len(all_var_names)
 
 def get_obs_SearchMC(file):
 	process = subprocess.Popen(["./stp-2.1.2", "-p", "--disable-simplifications", "--disable-cbitp", "--disable-equality" ,"-a", "-w", "--output-CNF",  "--minisat", file], stdout = subprocess.PIPE)
@@ -146,7 +147,7 @@ def get_obs_SearchMC(file):
 
 
 
-def model_count_SearchMC(file):
+def model_count_SearchMC(file, domain_size, flag_explicit_domain):
 	global all_var_names
 	global total_solving_time
 	#f = open(file, "r")
@@ -202,6 +203,7 @@ def model_count_SearchMC(file):
 			elif l[1] == "Exact":
 				lower_bound = int(l[-1])
 				upper_bound = int(l[-1])
+				return (lower_bound, upper_bound)
 			elif l[1] == "Running":
 				runtime = float(l[-1])
 				total_solving_time += runtime
@@ -209,11 +211,16 @@ def model_count_SearchMC(file):
 	#print(var_names)
 	#if "pad" in var_names:
 	#	var_names.remove("pad")
-	return (lower_bound * ((2 ** 8) ** (len(all_var_names) - len(var_names))), upper_bound * ((2 ** 8) ** (len(all_var_names) - len(var_names))))
+	#print(len(all_var_names))
+	#print(len(var_names))
+	if flag_explicit_domain:
+		return (lower_bound * domain_size, upper_bound * domain_size)
+	else:
+		return (lower_bound * ((2 ** 8) ** (len(all_var_names) - len(var_names))), upper_bound * ((2 ** 8) ** (len(all_var_names) - len(var_names))))
 
 
 
-def get_observation_constraints(directory, tool, domain_size):
+def get_observation_constraints(directory, tool, domain_size, flag_explicit_domain):
 	observationConstraints = {}
 	for root,_,files in os.walk(directory):
 		for file in files:
@@ -232,7 +239,7 @@ def get_observation_constraints(directory, tool, domain_size):
 				#else:
 				#	cost = 0
 				if tool == "searchMC":
-					count = model_count_SearchMC(abs_path)
+					count = model_count_SearchMC(abs_path, domain_size, flag_explicit_domain)
 				else:
 					count = model_count_ABC(abs_path, domain_size)
 				#print(all_var_names)
@@ -1218,9 +1225,13 @@ if __name__ == '__main__':
 
 	ModelCounterFail = 0
 
+	flag_explicit_domain = False
+
 
 	if dict_args["domain_size"] != None:
 		domain_size = int(str(dict_args["domain_size"]))
+		flag_explicit_domain = True
+
 	else:
 		if dict_args["tool"] == "abc":
 			domain_size = calculate_domain_size_ABC(klee_output_dir[len('-output-dir='):])
@@ -1237,7 +1248,7 @@ if __name__ == '__main__':
 	#while len(stddev_max_list) < 3:
 	#	start_time = time.time()
 	num_of_run = 0
-	global_min_entropy = math.log(domain_size)
+	global_min_entropy = math.log(domain_size, 2)
 	global_max_entropy = 0.0
 
 	total_time = 0.0
@@ -1249,7 +1260,7 @@ if __name__ == '__main__':
 			if dict_args["tool"] == "abc":
 				observationConstraints = get_observation_constraints(klee_output_dir[len('-output-dir='):],"abc", domain_size)
 			else:
-				observationConstraints = get_observation_constraints(klee_output_dir[len('-output-dir='):],"searchMC", domain_size)
+				observationConstraints = get_observation_constraints(klee_output_dir[len('-output-dir='):],"searchMC", domain_size, flag_explicit_domain)
 			
 			print("Model countng time:", time.time() - start_time)
 			#print(observationConstraints)
