@@ -4300,10 +4300,11 @@ void Executor::collectPathConstraintsWithCost(const ExecutionState &state) {
   Vlab::Driver driver;
   driver.InitializeLogger(0);
   driver.set_option(Vlab::Option::Name::REGEX_FLAG, 0x000f);
-  driver.set_option(Vlab::Option::Name::USE_SIGNED_INTEGERS);
+  //driver.set_option(Vlab::Option::Name::USE_UNSIGNED_INTEGERS);
   driver.Parse(&str);
   driver.InitializeSolver();
   driver.Solve();
+  std::cout << solver->getVarWidth(query) << std::endl;
   Vlab::Theory::BigInteger count = driver.CountInts(solver->getVarWidth(query) - 1);
   driver.reset();
   

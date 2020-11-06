@@ -19,21 +19,23 @@ total_solving_time = 0
 ############################Get model counts##########################
 
 def calculate_domain_size_ABC(directory):
+	max_num_var = 0
 	for root,_,files in os.walk(directory):
 		for file in files:
 			if file[-4:] == "smt2":
 				abs_path = os.path.abspath(os.path.join(root, file))
-				break
+				f = open(abs_path, "r")
+				cons = f.read();
+				f.close()
 
-	f = open(abs_path, "r")
-	cons = f.read();
-	f.close()
+				cons = cons.split("----")[0]
 
-	cons = cons.split("----")[0]
-
-	num_var = cons.count("declare-fun")
-
-	return 2**(8 * num_var)
+				num_var = cons.count("declare-fun")
+				print(num_var)
+				if num_var > max_num_var:
+					max_num_var = num_var
+	print(max_num_var)
+	return (2**8) ** max_num_var
 
 '''	
 	dom_cons = cons.split("(assert ")[0] + "(check-sat)"
@@ -82,7 +84,7 @@ def model_count_ABC(file, domain_size):
 	f.close()
 
 	#upper_bound
-	process = subprocess.Popen(["abc", "-i", "temp_upper_bound_cons.smt2", "-bi", "8", "--use-unsigned", "-v", "0", "--disable-equivalence", "--precise"], stdout = subprocess.PIPE)
+	process = subprocess.Popen(["abc", "-i", "temp_upper_bound_cons.smt2", "-bi", "8", "-v", "0", "--disable-equivalence", "--precise"], stdout = subprocess.PIPE)
 	result = process.communicate()[0].decode('utf-8')
 	process.terminate()
 	#print(result)
@@ -95,7 +97,7 @@ def model_count_ABC(file, domain_size):
 		print("Model count upper bound: ", upper_bound)
 
 	#lower_bound
-	process = subprocess.Popen(["abc", "-i", "temp_lower_bound_cons.smt2", "-bi", "8", "--use-unsigned", "-v", "0", "--disable-equivalence", "--precise"], stdout = subprocess.PIPE)
+	process = subprocess.Popen(["abc", "-i", "temp_lower_bound_cons.smt2", "-bi", "8", "-v", "0", "--disable-equivalence", "--precise"], stdout = subprocess.PIPE)
 	result = process.communicate()[0].decode('utf-8')
 	process.terminate()
 	#print(result)
@@ -129,7 +131,7 @@ def calculate_domain_size(directory):
 					words = line.split()
 					if len(words) > 0 and words[0] == "ASSERT(":
 						all_var_names.add(words[1])
-	#print(len(all_var_names))
+	print("Number of variables: ", len(all_var_names))
 	#return 256
 	#return 256 * 256
 	return 256 ** len(all_var_names)
@@ -1258,7 +1260,7 @@ if __name__ == '__main__':
 			ModelCounterFail = 0
 			start_time = time.time()
 			if dict_args["tool"] == "abc":
-				observationConstraints = get_observation_constraints(klee_output_dir[len('-output-dir='):],"abc", domain_size)
+				observationConstraints = get_observation_constraints(klee_output_dir[len('-output-dir='):],"abc", domain_size, flag_explicit_domain)
 			else:
 				observationConstraints = get_observation_constraints(klee_output_dir[len('-output-dir='):],"searchMC", domain_size, flag_explicit_domain)
 			
