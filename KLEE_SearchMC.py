@@ -115,8 +115,8 @@ def model_count_ABC(file, domain_size):
 			
 	return(lower_bound, upper_bound)
 
-def calculate_domain_size(directory):
-	global all_var_names
+def collect_variables(directory):
+	all_var_names = set()
 	for root,_,files in os.walk(directory):
 		for file in files:
 			if file[-4:] == "smt2":
@@ -131,10 +131,7 @@ def calculate_domain_size(directory):
 					words = line.split()
 					if len(words) > 0 and words[0] == "ASSERT(":
 						all_var_names.add(words[1])
-	print("Number of variables: ", len(all_var_names))
-	#return 256
-	#return 256 * 256
-	return 256 ** len(all_var_names)
+	return all_var_names
 
 def get_obs_SearchMC(file):
 	process = subprocess.Popen(["./stp-2.1.2", "-p", "--disable-simplifications", "--disable-cbitp", "--disable-equality" ,"-a", "-w", "--output-CNF",  "--minisat", file], stdout = subprocess.PIPE)
@@ -205,7 +202,6 @@ def model_count_SearchMC(file, domain_size, flag_explicit_domain):
 			elif l[1] == "Exact":
 				lower_bound = int(l[-1])
 				upper_bound = int(l[-1])
-				return (lower_bound, upper_bound)
 			elif l[1] == "Running":
 				runtime = float(l[-1])
 				total_solving_time += runtime
@@ -215,10 +211,7 @@ def model_count_SearchMC(file, domain_size, flag_explicit_domain):
 	#	var_names.remove("pad")
 	#print(len(all_var_names))
 	#print(len(var_names))
-	if flag_explicit_domain:
-		return (lower_bound * domain_size, upper_bound * domain_size)
-	else:
-		return (lower_bound * ((2 ** 8) ** (len(all_var_names) - len(var_names))), upper_bound * ((2 ** 8) ** (len(all_var_names) - len(var_names))))
+	return (lower_bound * ((2 ** 8) ** (len(all_var_names) - len(var_names))), upper_bound * ((2 ** 8) ** (len(all_var_names) - len(var_names))))
 
 
 
@@ -1229,16 +1222,17 @@ if __name__ == '__main__':
 
 	flag_explicit_domain = False
 
+	if dict_args["tool"] == "searchMC":
+		all_var_names = collect_variables(klee_output_dir[len('-output-dir='):])
 
 	if dict_args["domain_size"] != None:
 		domain_size = int(str(dict_args["domain_size"]))
 		flag_explicit_domain = True
-
 	else:
 		if dict_args["tool"] == "abc":
 			domain_size = calculate_domain_size_ABC(klee_output_dir[len('-output-dir='):])
 		else:
-			domain_size = calculate_domain_size(klee_output_dir[len('-output-dir='):])
+			domain_size = 256 ** len(all_var_names)
 
 	print("---------Domain Size: ", domain_size)
 
