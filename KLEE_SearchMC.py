@@ -248,7 +248,7 @@ def get_observation_constraints(directory, tool, domain_size, flag_explicit_doma
 	if not bool(observationConstraints):
 		print("No leakage")
 	else:
-		threshold = 7
+		threshold = 6
 		costs = sorted(observationConstraints.keys())
 		currentInterval = list(costs)[0]
 		pathConditions = observationConstraints[currentInterval]
