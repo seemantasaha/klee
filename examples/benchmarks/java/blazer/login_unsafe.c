@@ -36,8 +36,11 @@ int login_unsafe(char* guess, char* username) {
     //     return false;
     // }
 
-    for(int i = 0; i < size(guess); i++) {
-        if (i < size(real_password)) {
+    int len_guess = sizeof(guess)/sizeof(char);
+    int len_pw = sizeof(real_password)/sizeof(char);
+
+    for(int i = 0; i < len_guess; i++) {
+        if (i < len_pw) {
             if(guess[i] != real_password[i]) {
                 return 0;
             }

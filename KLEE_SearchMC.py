@@ -18,7 +18,10 @@ total_solving_time = 0
 
 ############################Get model counts##########################
 
-def calculate_domain_size_ABC(directory):
+define_text = ""
+
+def calculate_domain_size_ABC(directory, bit_size):
+	global define_text
 	max_num_var = 0
 	for root,_,files in os.walk(directory):
 		for file in files:
@@ -34,33 +37,57 @@ def calculate_domain_size_ABC(directory):
 				print(num_var)
 				if num_var > max_num_var:
 					max_num_var = num_var
+					define_text = cons.split("(assert ")[0].split("\n")[1]
+					print("define text: " + define_text)
 	print(max_num_var)
-	return (2**8) ** max_num_var
+	return (2 ** bit_size) ** max_num_var
 
-'''	
-	dom_cons = cons.split("(assert ")[0] + "(check-sat)"
-	dom_abs_path = os.path.abspath(os.path.join(root, "domain.smt2"))
-	f = open(dom_abs_path,"w")
-	f.write(dom_cons)
+def model_count_ABC_exact(file, domain_size, bit_size):
+	global define_text
+	global all_var_names
+	global total_solving_time
+
+	upper_bound = 0
+
+	f = open(file, "r")
+	bound_cons = f.read();
 	f.close()
-	
-	process = subprocess.Popen(["abc", "-i", dom_abs_path, "-bi", "8"], stdout = subprocess.PIPE)
+
+	bound_cons_arr = bound_cons.split("----")
+	upper_bound_cons = bound_cons_arr[0]
+
+	temp = upper_bound_cons.split("(assert ")[0].split("\n")[1]
+	#print("temp: " + temp)
+
+	#print("define_text: " + define_text)
+	upper_bound_cons = upper_bound_cons.replace(temp, define_text)
+
+	if bit_size == 1:
+		upper_bound_cons = upper_bound_cons.replace("(- 128)", "0");
+		upper_bound_cons = upper_bound_cons.replace("127", "1");
+
+	#print("Updated constraint: " + upper_bound_cons)
+
+	f = open("temp_upper_bound_cons.smt2","w")
+	f.write(upper_bound_cons)
+	f.close()
+
+	#upper_bound
+	process = subprocess.Popen(["abc", "-i", "temp_upper_bound_cons.smt2", "-bi", str(bit_size), "-v", "0", "--disable-equivalence", "--precise"], stdout = subprocess.PIPE)
 	result = process.communicate()[0].decode('utf-8')
 	process.terminate()
 	#print(result)
-	count = 0
 	lines = result.split('\n');
-	#for line in lines:
-	#	if "report bound: " in line and "count: " in line:
-	#		count = int(line.split("count: ")[1].split(" ")[0])
+
+	print(lines)
+	
 	if lines[0] == "sat":
-		count = int(lines[1])
-		print("Domain count: ", count)
+		upper_bound = int(lines[1])
+		print("Model count upper bound: ", upper_bound)
+			
+	return(0, upper_bound)
 
-	return count
-'''
-
-def model_count_ABC(file, domain_size):
+def model_count_ABC(file, domain_size, bit_size):
 	global all_var_names
 	global total_solving_time
 
@@ -84,7 +111,7 @@ def model_count_ABC(file, domain_size):
 	f.close()
 
 	#upper_bound
-	process = subprocess.Popen(["abc", "-i", "temp_upper_bound_cons.smt2", "-bi", "8", "-v", "0", "--disable-equivalence", "--precise"], stdout = subprocess.PIPE)
+	process = subprocess.Popen(["abc", "-i", "temp_upper_bound_cons.smt2", "-bi", str(bit_size), "-v", "0", "--disable-equivalence", "--precise"], stdout = subprocess.PIPE)
 	result = process.communicate()[0].decode('utf-8')
 	process.terminate()
 	#print(result)
@@ -97,7 +124,7 @@ def model_count_ABC(file, domain_size):
 		print("Model count upper bound: ", upper_bound)
 
 	#lower_bound
-	process = subprocess.Popen(["abc", "-i", "temp_lower_bound_cons.smt2", "-bi", "8", "-v", "0", "--disable-equivalence", "--precise"], stdout = subprocess.PIPE)
+	process = subprocess.Popen(["abc", "-i", "temp_lower_bound_cons.smt2", "-bi", str(bit_size), "-v", "0", "--disable-equivalence", "--precise"], stdout = subprocess.PIPE)
 	result = process.communicate()[0].decode('utf-8')
 	process.terminate()
 	#print(result)
@@ -146,7 +173,7 @@ def get_obs_SearchMC(file):
 
 
 
-def model_count_SearchMC(file, domain_size, flag_explicit_domain):
+def model_count_SearchMC(file, domain_size, bit_size):
 	global all_var_names
 	global total_solving_time
 	#f = open(file, "r")
@@ -209,13 +236,15 @@ def model_count_SearchMC(file, domain_size, flag_explicit_domain):
 	#print(var_names)
 	#if "pad" in var_names:
 	#	var_names.remove("pad")
-	#print(len(all_var_names))
-	#print(len(var_names))
-	return (lower_bound * ((2 ** 8) ** (len(all_var_names) - len(var_names))), upper_bound * ((2 ** 8) ** (len(all_var_names) - len(var_names))))
+	print(len(all_var_names))
+	print(len(var_names))
+	print(lower_bound)
+	print(upper_bound)
+	return (lower_bound * (256 ** (len(all_var_names) - len(var_names))), upper_bound * (256 ** (len(all_var_names) - len(var_names))))
 
 
 
-def get_observation_constraints(directory, tool, domain_size, flag_explicit_domain):
+def get_observation_constraints(directory, tool, domain_size, bit_size):
 	observationConstraints = {}
 	for root,_,files in os.walk(directory):
 		for file in files:
@@ -234,9 +263,11 @@ def get_observation_constraints(directory, tool, domain_size, flag_explicit_doma
 				#else:
 				#	cost = 0
 				if tool == "searchMC":
-					count = model_count_SearchMC(abs_path, domain_size, flag_explicit_domain)
+					count = model_count_SearchMC(abs_path, domain_size,  bit_size)
+				elif tool == "abc-exact":
+					count = model_count_ABC_exact(abs_path, domain_size, bit_size)
 				else:
-					count = model_count_ABC(abs_path, domain_size)
+					count = model_count_ABC(abs_path, domain_size, bit_size)
 				#print(all_var_names)
 				print("Count:", count)
 				if cost in observationConstraints:
@@ -1205,6 +1236,7 @@ if __name__ == '__main__':
 	parser.add_argument("--target")
 	parser.add_argument("--klee_dir")
 	parser.add_argument("--domain_size")
+	parser.add_argument("--num_bit")
 	args = parser.parse_args()
 	dict_args = vars(args)
 	target = dict_args["target"]
@@ -1218,9 +1250,16 @@ if __name__ == '__main__':
 	klee_output_dir = "-output-dir=" + klee_output_dir
 	#klee_output_stream = subprocess.Popen([klee_dir, klee_output_dir, '-write-smt2s', target])
 
+	if dict_args["num_bit"] != None:
+		bit_size = int(str(dict_args["num_bit"]))
+	else:
+		bit_size = 8
+
 	ModelCounterFail = 0
 
-	flag_explicit_domain = False
+	num_of_runs = 5
+	if dict_args["tool"] == "abc-exact":
+		num_of_runs = 1
 
 	if dict_args["tool"] == "searchMC":
 		all_var_names = collect_variables(klee_output_dir[len('-output-dir='):])
@@ -1229,12 +1268,12 @@ if __name__ == '__main__':
 		domain_size = int(str(dict_args["domain_size"]))
 		flag_explicit_domain = True
 	else:
-		if dict_args["tool"] == "abc":
-			domain_size = calculate_domain_size_ABC(klee_output_dir[len('-output-dir='):])
+		if dict_args["tool"] == "abc-exact" or dict_args["tool"] == "abc":
+			domain_size = calculate_domain_size_ABC(klee_output_dir[len('-output-dir='):], bit_size)
 		else:
 			domain_size = 256 ** len(all_var_names)
 
-	print("---------Domain Size: ", domain_size)
+	print("Domain Size: ", domain_size)
 
 	stddev_max_list = []
 	stddev_min_list = []
@@ -1249,14 +1288,16 @@ if __name__ == '__main__':
 
 	total_time = 0.0
 	elapsed_time = 0.0
-	while num_of_run < 5:
+	while num_of_run < num_of_runs:
 		try:
 			ModelCounterFail = 0
 			start_time = time.time()
-			if dict_args["tool"] == "abc":
-				observationConstraints = get_observation_constraints(klee_output_dir[len('-output-dir='):],"abc", domain_size, flag_explicit_domain)
+			if dict_args["tool"] == "abc-exact":
+				observationConstraints = get_observation_constraints(klee_output_dir[len('-output-dir='):],"abc-exact", domain_size, bit_size)
+			elif dict_args["tool"] == "abc":
+				observationConstraints = get_observation_constraints(klee_output_dir[len('-output-dir='):],"abc", domain_size, bit_size)
 			else:
-				observationConstraints = get_observation_constraints(klee_output_dir[len('-output-dir='):],"searchMC", domain_size, flag_explicit_domain)
+				observationConstraints = get_observation_constraints(klee_output_dir[len('-output-dir='):],"searchMC", domain_size, bit_size)
 			
 			print("Model countng time:", time.time() - start_time)
 			#print(observationConstraints)
@@ -1278,8 +1319,9 @@ if __name__ == '__main__':
 			#print("Max entropy (simulated annealing): {}, Min entropy (simulated annealing): {}".format(max_entropy_SA[1], min_entropy_SA[1]))
 
 			#max_entropy_SLSQP = get_max_entropy_SLSQP(upper_lower_bounds, domain_size)
-			min_entropy_polyhedron = get_min_entropy_polyhedron(upper_lower_bounds, domain_size)
-			print("Min entropy (polyhedron): {}".format(min_entropy_polyhedron[1]))
+			if dict_args["tool"] != "abc-exact":
+				min_entropy_polyhedron = get_min_entropy_polyhedron(upper_lower_bounds, domain_size)
+				print("Min entropy (polyhedron): {}".format(min_entropy_polyhedron[1]))
 			#print("Max entropy (SLSQP): {}, Min entropy (polyhedron): {}".format(max_entropy_SLSQP[1], min_entropy_polyhedron[1]))
 
 			#print("Max entropy point (stddev): {}, Min entropy point (stddev): {}".format(max_entropy_stddev[0], min_entropy_stddev[0]))
@@ -1297,8 +1339,9 @@ if __name__ == '__main__':
 			if global_max_entropy < max_entropy_hill[1]:
 				global_max_entropy = max_entropy_hill[1]
 
-			if global_min_entropy > min_entropy_polyhedron[1]:
-				global_min_entropy = min_entropy_polyhedron[1]
+			if dict_args["tool"] != "abc-exact":
+				if global_min_entropy > min_entropy_polyhedron[1]:
+					global_min_entropy = min_entropy_polyhedron[1]
 
 			total_time += elapsed_time
 
@@ -1316,8 +1359,9 @@ if __name__ == '__main__':
 		#print("Avg time: {}".format(sum(time_list)/3))
 		#print("Avg solving time: {}".format(total_solving_time/3))
 
-	print("Minimum entropy after 5 successful run: ", global_min_entropy)
-	print("Maximum entropy after 5 successful run: ", global_max_entropy)
+	if dict_args["tool"] != "abc-exact":
+		print("Minimum entropy after", str(num_of_runs) ,"successful run: ", global_min_entropy)
+	print("Maximum entropy after", str(num_of_runs) ,"successful run: ", global_max_entropy)
 	print("Average time for each run: ", total_time/5)
 	
 	

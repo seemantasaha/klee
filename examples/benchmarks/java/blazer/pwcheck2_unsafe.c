@@ -23,15 +23,18 @@ int size(char *ptr)
 
 int pwcheck2_unsafe(char* guess, char* pw) {
 
-  if(size(guess) != size(pw)) {
-      return 0;
+  int len_guess = sizeof(guess)/sizeof(char);
+  int len_pw = sizeof(pw)/sizeof(char);
+
+  if(len_guess != len_pw) {
+    return 0;
   }
 
   int i;
   int unused;
   int matches = 1;
-  for(i = 0; i < size(guess); i++) {
-      if (i < size(pw)) {
+  for(i = 0; i < len_guess; i++) {
+      if (i < len_pw) {
         if(guess[i] != pw[i]) {
           matches = 0;
         } else {

@@ -4241,7 +4241,6 @@ void Executor::getConstraintLog(const ExecutionState &state, std::string &res,
 
       free(log);
 
-      /*
 
       //ABC lower bound constraint
       ref<Expr> notQueryAssert = NotExpr::create(queryAssert);
@@ -4262,7 +4261,7 @@ void Executor::getConstraintLog(const ExecutionState &state, std::string &res,
       //std::cout<<"Printing translated pc: \n"<<res<<std::endl;
 
       free(not_log);
-      */
+      
     }
   } break;
 

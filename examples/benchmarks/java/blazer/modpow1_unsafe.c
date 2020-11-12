@@ -109,11 +109,11 @@ int main() {
   	int a, b, c;
 	// Make the input symbolic.
 	klee_make_symbolic(&a, sizeof a, "a");
-    klee_assume(a >= 0); klee_assume(a < 64);
+    klee_assume(a >= 0); klee_assume(a < 16);
     klee_make_symbolic(&b, sizeof b, "b");
-    klee_assume(b >= 0); klee_assume(b < 64);
+    klee_assume(b >= 0); klee_assume(b < 16);
     klee_make_symbolic(&c, sizeof c, "c");
-    klee_assume(c >= 0); klee_assume(c < 64);
+    klee_assume(c >= 0); klee_assume(c < 16);
   	return modPow1_unsafe(a,b,c);
     // int res = modular_exponentiation_inline_unsafe(2,5,13);
     // printf("%d", res);

@@ -27,8 +27,8 @@ int size(char *ptr)
 int passwordsEqual_unsafe(char* a, char* b) {
     int equal = 1;
     int shmequal = 1;
-    int aLen = size(a);
-    int bLen = size(b);
+    int aLen = sizeof(a)/sizeof(char);
+    int bLen = sizeof(b)/sizeof(char);
     if (aLen != bLen) {
         equal = 0;
     }
