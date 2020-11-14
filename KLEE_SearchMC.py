@@ -1213,7 +1213,8 @@ def get_min_entropy_polyhedron(upper_lower_bounds, domain_size):
 			prob = frac.numerator / frac.denominator
 			sum_prob += prob
 			entropy += -1 * math.log(prob, 2) * prob
-		entropy += -1 * math.log(1 - sum_prob, 2) * (1 - sum_prob)
+		if 1 - sum_prob > 0:
+			entropy += -1 * math.log(1 - sum_prob, 2) * (1 - sum_prob)
 		if min_entropy == -1 or entropy < min_entropy:
 			min_entropy = entropy
 			min_entropy_prob_point = point
