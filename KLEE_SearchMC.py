@@ -56,11 +56,11 @@ def model_count_ABC_exact(file, domain_size, bit_size):
 	bound_cons_arr = bound_cons.split("----")
 	upper_bound_cons = bound_cons_arr[0]
 
-	temp = upper_bound_cons.split("(assert ")[0].split("\n")[1]
+	#temp = upper_bound_cons.split("(assert ")[0].split("\n")[1]
 	#print("temp: " + temp)
 
 	#print("define_text: " + define_text)
-	upper_bound_cons = upper_bound_cons.replace(temp, define_text)
+	#upper_bound_cons = upper_bound_cons.replace(temp, define_text)
 
 	if bit_size == 1:
 		upper_bound_cons = upper_bound_cons.replace("(- 128)", "0");
@@ -193,6 +193,20 @@ def model_count_SearchMC(file, domain_size, bit_size):
 	#f = open(file, "w")
 	#f.write(new_constraint)
 	#f.close()
+
+	if bit_size == 1:
+		f = open(file, "r")
+		bound_cons = f.read();
+		f.close()
+
+		bound_cons = bound_cons.replace("(Array (_ BitVec 32) (_ BitVec 8) )", "(Array (_ BitVec 32) (_ BitVec 1) )");
+
+		f = open("temp_bv_cons.smt2","w")
+		f.write(bound_cons)
+		f.close()
+
+		file = "temp_bv_cons.smt2"
+
 	var_names = set()
 	assert_var_names = set()
 	process = subprocess.Popen(["./stp-2.1.2", "-p", "--disable-simplifications", "--disable-cbitp", "--disable-equality" ,"-a", "--minisat", file], stdout = subprocess.PIPE)
@@ -240,7 +254,7 @@ def model_count_SearchMC(file, domain_size, bit_size):
 	print(len(var_names))
 	print(lower_bound)
 	print(upper_bound)
-	return (lower_bound * (256 ** (len(all_var_names) - len(var_names))), upper_bound * (256 ** (len(all_var_names) - len(var_names))))
+	return (lower_bound * ((2 ** bit_size) ** (len(all_var_names) - len(var_names))), upper_bound * ((2 ** bit_size) ** (len(all_var_names) - len(var_names))))
 
 
 
@@ -1272,7 +1286,7 @@ if __name__ == '__main__':
 		if dict_args["tool"] == "abc-exact" or dict_args["tool"] == "abc":
 			domain_size = calculate_domain_size_ABC(klee_output_dir[len('-output-dir='):], bit_size)
 		else:
-			domain_size = 256 ** len(all_var_names)
+			domain_size = (2 ** bit_size) ** len(all_var_names)
 
 	print("Domain Size: ", domain_size)
 
