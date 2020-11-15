@@ -327,13 +327,15 @@ def get_upper_lower_bounds(observationConstraints):
 #############################Calculate entropy#######################################
 
 ############Standard deviation method##############
-def get_max_entropy_standard_deviation(upper_lower_bounds, domain_size):
+def get_max_entropy_standard_deviation(upper_lower_bounds, domain_size, uup):
 	print("Domain Size: ", domain_size)
 	counts = {}
 	avg = domain_size//len(upper_lower_bounds)
 	sum_counts = 0
 	max_entropy = 0
+	#print("Length: ", len(upper_lower_bounds))
 	for cost in upper_lower_bounds:
+		#print(cost)
 		lower_bound = upper_lower_bounds[cost][0]
 		upper_bound = upper_lower_bounds[cost][1]
 		if avg >= lower_bound and avg <= upper_bound:
@@ -386,7 +388,7 @@ def get_max_entropy_standard_deviation(upper_lower_bounds, domain_size):
 							if avg - counts[cost] < second_min_diff_between_count_and_avg:
 								second_min_diff_between_count_and_avg = avg - counts[cost]
 			if len(l) == 0:
-				print("Incorrect counts given by SearchMC:",upper_lower_bounds)
+				print("Incorrect counts given by model counter:",upper_lower_bounds)
 			avg_diff = int(diff/len(l))
 			if second_min_diff_between_count_and_avg != -1:
 				diff_min_second = second_min_diff_between_count_and_avg - min_diff_between_count_and_avg
@@ -680,7 +682,7 @@ def get_next_neighbor_max_deterministic(current_counts, upper_lower_bounds, doma
 	return (max_neighbor, max_neighbor_entropy)
 
 def get_max_entropy_hill_climbing_deterministic(upper_lower_bounds, domain_size):
-	current_counts_dict, current_entropy = get_max_entropy_standard_deviation(upper_lower_bounds, domain_size)
+	current_counts_dict, current_entropy = get_max_entropy_standard_deviation(upper_lower_bounds, domain_size, uup)
 	current_counts = []
 	for cost in current_counts_dict:
 		current_counts.append((cost, current_counts_dict[cost]))
@@ -1252,6 +1254,8 @@ if __name__ == '__main__':
 	parser.add_argument("--klee_dir")
 	parser.add_argument("--domain_size")
 	parser.add_argument("--num_bit")
+	parser.add_argument("--uup")
+	parser.add_argument("--max_count")
 	args = parser.parse_args()
 	dict_args = vars(args)
 	target = dict_args["target"]
@@ -1269,6 +1273,15 @@ if __name__ == '__main__':
 		bit_size = int(str(dict_args["num_bit"]))
 	else:
 		bit_size = 8
+
+	uup = 0
+	max_count = 0
+	if dict_args["uup"] != None:
+		if str(dict_args["uup"]) == "true":
+			uup = 1
+			if str(dict_args["max_count"]) == "true":
+				max_count = 1
+
 
 	ModelCounterFail = 0
 
@@ -1317,6 +1330,25 @@ if __name__ == '__main__':
 			print("Model countng time:", time.time() - start_time)
 			#print(observationConstraints)
 			upper_lower_bounds = get_upper_lower_bounds(observationConstraints)
+
+			if uup == 1 and dict_args["tool"] == "abc-exact":
+				explored_count = 0
+				max = 0
+				cost_for_max = 0
+				for cost in observationConstraints:
+					for (constraint, count) in observationConstraints[cost]:
+						explored_count += count[1]
+						if(count[1] > max):
+							max = count[1]
+							cost_for_max = cost
+				unexplored_count = domain_size - explored_count
+				print("Maximum possible number of unexplored observations: ", unexplored_count)
+				if max_count == 1:
+					for new_obs in range(0,unexplored_count):
+						upper_lower_bounds[10000+(10*new_obs)] = (0,1)
+				else:
+					upper_lower_bounds[cost_for_max] = (0, upper_lower_bounds[cost_for_max][1] + unexplored_count)
+
 			print("upper and lower bounds given by Model Counter:", upper_lower_bounds)
 			print("Size: ", len(upper_lower_bounds))
 
