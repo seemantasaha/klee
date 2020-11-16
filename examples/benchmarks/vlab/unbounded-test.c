@@ -1,6 +1,6 @@
 #include "klee/klee.h"
 
-int check_unbound(int x){
+int check_unbound(unsigned char x){
 	int c;
 	if(x >=0 && x < 256) {
 		for(c = 0; c < 10; c++);
@@ -30,8 +30,7 @@ int check_unbound(int x){
 }
 
 int main(){
-	int x;
+	unsigned char x;
   	klee_make_symbolic(&x, sizeof x, "x");
-  	klee_assume(x >= 0); klee_assume(x < 256);
 	return check_unbound(x);
 }
