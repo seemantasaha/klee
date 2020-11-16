@@ -42,6 +42,51 @@ def calculate_domain_size_ABC(directory, bit_size):
 	print(max_num_var)
 	return (2 ** bit_size) ** max_num_var
 
+def add_unexplored_path(directory):
+	declarations = set()
+	assertions = set()
+	for root,_,files in os.walk(directory):
+		for file in files:
+			if file[-4:] == "smt2" and file != "unexplored.smt2":
+				abs_path = os.path.abspath(os.path.join(root, file))
+				f = open(abs_path, "r")
+				cons = f.read()
+				f.close()
+				lines = cons.split('\n')
+				assertion = ""
+				for line in lines:
+					if line.startswith("(declare-fun"):
+						declarations.add(line)
+					elif line.startswith("(assert"):
+						if assertion == "":
+							assertion = line[len("(assert ") : -1]
+						else:
+							assertion = "(and {} {})".format(assertion, line[len("(assert ") : -1])
+				assertions.add(assertion)
+
+	unexplored = ""
+	unexplored += ";10000\n"
+	unexplored += "(set-logic QF_AUFBV )\n"
+	for declaration in declarations:
+		unexplored += declaration
+		unexplored += "\n"
+	unexplored_cons = ""
+	for assertion in assertions:
+		if unexplored_cons == "":
+			unexplored_cons = assertion
+		else :
+			unexplored_cons = "(or {} {})".format(unexplored_cons, assertion)
+	unexplored_cons = "(assert (not {}) )".format(unexplored_cons)
+	unexplored += unexplored_cons
+	unexplored += "\n"
+	unexplored += "(check-sat)\n"
+	unexplored += "(exit)\n"
+	abs_path = os.path.join(directory, "unexplored.smt2")
+	f = open(abs_path, 'w')
+	f.write(unexplored)
+	f.close()
+
+
 def model_count_ABC_exact(file, domain_size, bit_size):
 	global define_text
 	global all_var_names
@@ -1325,6 +1370,9 @@ if __name__ == '__main__':
 			elif dict_args["tool"] == "abc":
 				observationConstraints = get_observation_constraints(klee_output_dir[len('-output-dir='):],"abc", domain_size, bit_size)
 			else:
+				if uup == 1:
+					output_dir = klee_output_dir[len('-output-dir='):]
+					add_unexplored_path(output_dir)
 				observationConstraints = get_observation_constraints(klee_output_dir[len('-output-dir='):],"searchMC", domain_size, bit_size)
 			
 			print("Model countng time:", time.time() - start_time)
@@ -1333,13 +1381,13 @@ if __name__ == '__main__':
 
 			if uup == 1 and dict_args["tool"] == "abc-exact":
 				explored_count = 0
-				max = 0
+				max_ = 0
 				cost_for_max = 0
 				for cost in observationConstraints:
 					for (constraint, count) in observationConstraints[cost]:
 						explored_count += count[1]
-						if(count[1] > max):
-							max = count[1]
+						if(count[1] > max_):
+							max_ = count[1]
 							cost_for_max = cost
 				unexplored_count = domain_size - explored_count
 				print("Maximum possible number of unexplored observations: ", unexplored_count)
@@ -1358,7 +1406,7 @@ if __name__ == '__main__':
 
 			max_entropy_hill = get_max_entropy_hill_climbing_deterministic(upper_lower_bounds, domain_size)
 			#min_entropy_hill = get_min_entropy_hill_climbing_deterministic(upper_lower_bounds, domain_size)
-			print("Max entropy (hill climbing): {}".format(max_entropy_hill[1]))
+			#print("Max entropy (hill climbing): {}".format(max_entropy_hill[1]))
 			#print("Max entropy (hill climbing): {}, Min entropy (hill climbing): {}".format(max_entropy_hill[1], min_entropy_hill[1]))
 
 			#max_entropy_SA = get_max_entropy_SA(upper_lower_bounds, domain_size)
@@ -1368,7 +1416,31 @@ if __name__ == '__main__':
 			#max_entropy_SLSQP = get_max_entropy_SLSQP(upper_lower_bounds, domain_size)
 			if dict_args["tool"] != "abc-exact":
 				min_entropy_polyhedron = get_min_entropy_polyhedron(upper_lower_bounds, domain_size)
-				print("Min entropy (polyhedron): {}".format(min_entropy_polyhedron[1]))
+				#print("Min entropy (polyhedron): {}".format(min_entropy_polyhedron[1]))
+
+			if dict_args["tool"] != "abc-exact":
+				max_entropy_point = max_entropy_hill[0]
+				min_entropy_point = min_entropy_polyhedron[0]
+				unexplored_max_count = max_entropy_point[10000]
+				unexplored_min_count = min_entropy_point[10000]
+				max_entropy_point.pop(10000)
+				min_entropy_point.pop(10000)
+				max_instruction = max(max_entropy_point)
+				for new_obs in range(1, unexplored_max_count + 1):
+					max_entropy_point[max_instruction+(10*new_obs)] = 1
+				cost_with_highest_prob = max(min_entropy_point, key = min_entropy_point.get)
+				min_entropy_point[cost_with_highest_prob] += unexplored_min_count
+				max_entropy = 0
+				for key in max_entropy_point:
+					max_entropy += -1 * max_entropy_point[key]/domain_size * math.log(max_entropy_point[key]/domain_size, 2)
+				min_entropy = 0
+				for key in min_entropy_point:
+					min_entropy += -1 * min_entropy_point[key]/domain_size * math.log(min_entropy_point[key]/domain_size, 2)
+				max_entropy_hill = (max_entropy_point, max_entropy)
+				min_entropy_polyhedron = (min_entropy_point, min_entropy)
+
+			print("Max entropy (hill climbing): {}".format(max_entropy_hill[1]))
+			print("Min entropy (polyhedron): {}".format(min_entropy_polyhedron[1]))
 			#print("Max entropy (SLSQP): {}, Min entropy (polyhedron): {}".format(max_entropy_SLSQP[1], min_entropy_polyhedron[1]))
 
 			#print("Max entropy point (stddev): {}, Min entropy point (stddev): {}".format(max_entropy_stddev[0], min_entropy_stddev[0]))
