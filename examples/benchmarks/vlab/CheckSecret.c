@@ -2,10 +2,6 @@
 
 int secret = 1000;
 
-int checkSecret(int guess, char t[], int size){
-	return recur(guess, t, size - 1);
-}
-
 int recur(int guess, char t[], int index){
 	if(index == 0 && t[index] == 1){
 		if(guess <= secret){
@@ -23,13 +19,17 @@ int recur(int guess, char t[], int index){
 	return guess == secret;
 }
 
+int checkSecret(int guess, char t[], int size){
+	return recur(guess, t, size - 1);
+}
+
 int main(){
 	int guess;
 	klee_make_symbolic(&guess, sizeof guess, "guess");
-	char t[12];
+	char t[4];
 	klee_make_symbolic(t, sizeof t, "t");
-	for (int i = 0; i < 12; i++){
+	for (int i = 0; i < 4; i++){
 		klee_assume(t[i] >= 0); klee_assume(t[i] <= 1);;
 	}
-	checkSecret(guess, t, 12);
+	checkSecret(guess, t, 4);
 }

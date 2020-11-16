@@ -118,7 +118,7 @@ def model_count_ABC_exact(file, domain_size, bit_size):
 	f.close()
 
 	#upper_bound
-	process = subprocess.Popen(["abc", "-i", "temp_upper_bound_cons.smt2", "-bi", str(bit_size), "-v", "0", "--disable-equivalence", "--precise"], stdout = subprocess.PIPE)
+	process = subprocess.Popen(["abc", "-i", "temp_upper_bound_cons.smt2", "-bi", str(bit_size), "-v", "0", "--use-unsigned"], stdout = subprocess.PIPE)
 	result = process.communicate()[0].decode('utf-8')
 	process.terminate()
 	#print(result)
