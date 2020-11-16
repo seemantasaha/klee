@@ -1406,7 +1406,8 @@ if __name__ == '__main__':
 
 			max_entropy_hill = get_max_entropy_hill_climbing_deterministic(upper_lower_bounds, domain_size)
 			#min_entropy_hill = get_min_entropy_hill_climbing_deterministic(upper_lower_bounds, domain_size)
-			#print("Max entropy (hill climbing): {}".format(max_entropy_hill[1]))
+			if uup == 0 or dict_args["tool"] == "abc-exact":
+				print("Max entropy (hill climbing): {}".format(max_entropy_hill[1]))
 			#print("Max entropy (hill climbing): {}, Min entropy (hill climbing): {}".format(max_entropy_hill[1], min_entropy_hill[1]))
 
 			#max_entropy_SA = get_max_entropy_SA(upper_lower_bounds, domain_size)
@@ -1416,9 +1417,10 @@ if __name__ == '__main__':
 			#max_entropy_SLSQP = get_max_entropy_SLSQP(upper_lower_bounds, domain_size)
 			if dict_args["tool"] != "abc-exact":
 				min_entropy_polyhedron = get_min_entropy_polyhedron(upper_lower_bounds, domain_size)
-				#print("Min entropy (polyhedron): {}".format(min_entropy_polyhedron[1]))
+				if uup == 0:
+					print("Min entropy (polyhedron): {}".format(min_entropy_polyhedron[1]))
 
-			if dict_args["tool"] != "abc-exact":
+			if uup == 1 and dict_args["tool"] != "abc-exact":
 				max_entropy_point = max_entropy_hill[0]
 				min_entropy_point = min_entropy_polyhedron[0]
 				unexplored_max_count = max_entropy_point[10000]
@@ -1438,9 +1440,8 @@ if __name__ == '__main__':
 					min_entropy += -1 * min_entropy_point[key]/domain_size * math.log(min_entropy_point[key]/domain_size, 2)
 				max_entropy_hill = (max_entropy_point, max_entropy)
 				min_entropy_polyhedron = (min_entropy_point, min_entropy)
-
-			print("Max entropy (hill climbing): {}".format(max_entropy_hill[1]))
-			print("Min entropy (polyhedron): {}".format(min_entropy_polyhedron[1]))
+				print("Max entropy (hill climbing): {}".format(max_entropy_hill[1]))
+				print("Min entropy (polyhedron): {}".format(min_entropy_polyhedron[1]))
 			#print("Max entropy (SLSQP): {}, Min entropy (polyhedron): {}".format(max_entropy_SLSQP[1], min_entropy_polyhedron[1]))
 
 			#print("Max entropy point (stddev): {}, Min entropy point (stddev): {}".format(max_entropy_stddev[0], min_entropy_stddev[0]))
