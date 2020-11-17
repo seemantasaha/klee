@@ -1405,20 +1405,20 @@ if __name__ == '__main__':
 				unexplored_count = domain_size - explored_count
 				print("Maximum possible number of unexplored observations: ", unexplored_count)
 				#if max_count == 1:
-				if unexplored_count < 256:
-					for new_obs in range(0,unexplored_count):
-						upper_lower_bounds[10000+(10*new_obs)] = (0,1)
-					entropy = 0
-					for key in upper_lower_bounds:
-						entropy += -1 * upper_lower_bounds[key][1]/domain_size * math.log(upper_lower_bounds[key][1]/domain_size, 2)
-				else:
-					temp_domain_size = domain_size - unexplored_count
-					entropy = 0
-					for key in upper_lower_bounds:
-						entropy += -1 * upper_lower_bounds[key][1]/domain_size * math.log(upper_lower_bounds[key][1]/domain_size, 2)
-					channel_capacity = math.log(unexplored_count, 2)
-					print("Channel capacity for unexplored paths: ", channel_capacity)
-					entropy += channel_capacity
+				#if unexplored_count < 256:
+				#for new_obs in range(0,unexplored_count):
+				#	upper_lower_bounds[10000+(10*new_obs)] = (0,1)
+				entropy = -1 * unexplored_count/domain_size * math.log(1/domain_size, 2)
+				for key in upper_lower_bounds:
+					entropy += -1 * upper_lower_bounds[key][1]/domain_size * math.log(upper_lower_bounds[key][1]/domain_size, 2)
+				#else:
+				#	temp_domain_size = domain_size - unexplored_count
+				#	entropy = 0
+				#	for key in upper_lower_bounds:
+				#		entropy += -1 * upper_lower_bounds[key][1]/domain_size * math.log(upper_lower_bounds[key][1]/domain_size, 2)
+				#	channel_capacity = math.log(unexplored_count, 2)
+				#	print("Channel capacity for unexplored paths: ", channel_capacity)
+				#	entropy += channel_capacity
 				print("Max Entropy : {}".format(entropy))
 				#else:
 				upper_lower_bounds_copy[cost_for_max] = (0, upper_lower_bounds_copy[cost_for_max][1] + unexplored_count)
@@ -1464,20 +1464,20 @@ if __name__ == '__main__':
 					min_entropy_point.pop(10000)
 					max_instruction = max(max_entropy_point)
 					print(unexplored_max_count)
-					if unexplored_max_count < 256: #to avoid memory error
-						for new_obs in range(1, unexplored_max_count + 1):
-							max_entropy_point[max_instruction+(10*new_obs)] = 1
-						max_entropy = 0
-						for key in max_entropy_point:
-							max_entropy += -1 * max_entropy_point[key]/domain_size * math.log(max_entropy_point[key]/domain_size, 2)
-					else: #channel capacity for unexplored path
-						temp_domain_size = domain_size - unexplored_max_count
-						max_entropy = 0
-						for key in max_entropy_point:
-							max_entropy += -1 * max_entropy_point[key]/temp_domain_size * math.log(max_entropy_point[key]/temp_domain_size, 2)
-						channel_capacity = math.log(unexplored_max_count, 2)
-						print("Channel capacity for unexplored paths: ", channel_capacity)
-						max_entropy += channel_capacity
+					#if unexplored_max_count < 256: #to avoid memory error
+					#	for new_obs in range(1, unexplored_max_count + 1):
+					#		max_entropy_point[max_instruction+(10*new_obs)] = 1
+					max_entropy = -1 * unexplored_max_count/domain_size * math.log(1/domain_size, 2)
+					for key in max_entropy_point:
+						max_entropy += -1 * max_entropy_point[key]/domain_size * math.log(max_entropy_point[key]/domain_size, 2)
+					#else: #channel capacity for unexplored path
+					#	temp_domain_size = domain_size - unexplored_max_count
+					#	max_entropy = 0
+					#	for key in max_entropy_point:
+					#		max_entropy += -1 * max_entropy_point[key]/temp_domain_size * math.log(max_entropy_point[key]/temp_domain_size, 2)
+					#	channel_capacity = math.log(unexplored_max_count, 2)
+					#	print("Channel capacity for unexplored paths: ", channel_capacity)
+					#	max_entropy += channel_capacity
 
 					cost_with_highest_prob = max(min_entropy_point, key = min_entropy_point.get)
 					
