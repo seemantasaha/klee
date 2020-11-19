@@ -42,7 +42,7 @@ def calculate_domain_size_ABC(directory, bit_size):
 	print(max_num_var)
 	return (2 ** bit_size) ** max_num_var
 
-def add_unexplored_path(directory, domain_size):
+def add_unexplored_path(directory):
 	declarations = set()
 	assertions = set()
 	for root,_,files in os.walk(directory):
@@ -66,7 +66,7 @@ def add_unexplored_path(directory, domain_size):
 				assertions.add(assertion)
 
 	unexplored = ""
-	unexplored += ";10000\n"
+	unexplored += ";1000000\n"
 	unexplored += "(set-logic QF_AUFBV )\n"
 	for declaration in declarations:
 		unexplored += declaration
@@ -83,6 +83,12 @@ def add_unexplored_path(directory, domain_size):
 	#if domain_size == 256:
 	#	unexplored += "\n(let ( (?B1 (concat  (select  x (_ bv3 32) ) (concat  (select  x (_ bv2 32) ) (concat  (select  x (_ bv1 32) ) (select  x (_ bv0 32) ) ) ) ) ) )"
 	#	unexplored += "(and  (bvsle  (_ bv0 32) ?B1 ) (bvslt  ?B1 (_ bv256 32) ) ) (bvsle  (_ bv16 32) ?B1 ) )\n"
+	# For pinchecker binary
+	# unexplored += "(assert (let ( (?B1 ((_ sign_extend 24)  (select  h (_ bv2 32) ) ) ) (?B2 ((_ sign_extend 24)  (select  l (_ bv2 32) ) ) ) (?B3 ((_ sign_extend 24)  (select  h (_ bv0 32) ) ) ) (?B4 ((_ sign_extend 24)  (select  l (_ bv0 32) ) ) ) (?B5 ((_ sign_extend 24)  (select  l (_ bv1 32) ) ) ) (?B6 ((_ sign_extend 24)  (select  h (_ bv1 32) ) ) ) (?B7 ((_ sign_extend 24)  (select  l (_ bv5 32) ) ) ) (?B8 ((_ sign_extend 24)  (select  h (_ bv5 32) ) ) ) (?B9 ((_ sign_extend 24)  (select  l (_ bv3 32) ) ) ) (?B10 ((_ sign_extend 24)  (select  l (_ bv4 32) ) ) ) (?B11 ((_ sign_extend 24)  (select  h (_ bv4 32) ) ) ) (?B12 ((_ sign_extend 24)  (select  h (_ bv9 32) ) ) ) (?B13 ((_ sign_extend 24)  (select  h (_ bv3 32) ) ) ) (?B14 ((_ sign_extend 24)  (select  l (_ bv9 32) ) ) ) (?B15 ((_ sign_extend 24)  (select  h (_ bv7 32) ) ) ) (?B16 ((_ sign_extend 24)  (select  h (_ bv6 32) ) ) ) (?B17 ((_ sign_extend 24)  (select  l (_ bv7 32) ) ) ) (?B18 ((_ sign_extend 24)  (select  l (_ bv8 32) ) ) ) (?B19 ((_ sign_extend 24)  (select  h (_ bv8 32) ) ) ) (?B20 ((_ sign_extend 24)  (select  l (_ bv6 32) ) ) ) (?B21 ((_ sign_extend 24)  (select  l (_ bv10 32) ) ) ) (?B22 ((_ sign_extend 24)  (select  h (_ bv12 32) ) ) ) (?B23 ((_ sign_extend 24)  (select  l (_ bv12 32) ) ) ) (?B24 ((_ sign_extend 24)  (select  l (_ bv11 32) ) ) ) (?B25 ((_ sign_extend 24)  (select  h (_ bv11 32) ) ) ) (?B26 ((_ sign_extend 24)  (select  h (_ bv10 32) ) ) ) (?B27 ((_ sign_extend 24)  (select  h (_ bv14 32) ) ) ) (?B28 ((_ sign_extend 24)  (select  l (_ bv14 32) ) ) ) (?B29 ((_ sign_extend 24)  (select  l (_ bv15 32) ) ) ) (?B30 ((_ sign_extend 24)  (select  h (_ bv15 32) ) ) ) (?B31 ((_ sign_extend 24)  (select  h (_ bv13 32) ) ) ) (?B32 ((_ sign_extend 24)  (select  l (_ bv13 32) ) ) ) (?B33 ((_ sign_extend 24)  (select  h (_ bv18 32) ) ) ) (?B34 ((_ sign_extend 24)  (select  l (_ bv18 32) ) ) ) (?B35 ((_ sign_extend 24)  (select  h (_ bv16 32) ) ) ) (?B36 ((_ sign_extend 24)  (select  l (_ bv16 32) ) ) ) (?B37 ((_ sign_extend 24)  (select  h (_ bv17 32) ) ) ) (?B38 ((_ sign_extend 24)  (select  l (_ bv17 32) ) ) ) (?B39 ((_ sign_extend 24)  (select  h (_ bv21 32) ) ) ) (?B40 ((_ sign_extend 24)  (select  h (_ bv22 32) ) ) ) (?B41 ((_ sign_extend 24)  (select  l (_ bv22 32) ) ) ) (?B42 ((_ sign_extend 24)  (select  l (_ bv19 32) ) ) ) (?B43 ((_ sign_extend 24)  (select  h (_ bv19 32) ) ) ) (?B44 ((_ sign_extend 24)  (select  l (_ bv20 32) ) ) ) (?B45 ((_ sign_extend 24)  (select  l (_ bv21 32) ) ) ) (?B46 ((_ sign_extend 24)  (select  h (_ bv20 32) ) ) ) (?B47 ((_ sign_extend 24)  (select  l (_ bv24 32) ) ) ) (?B48 ((_ sign_extend 24)  (select  h (_ bv24 32) ) ) ) (?B49 ((_ sign_extend 24)  (select  l (_ bv25 32) ) ) ) (?B50 ((_ sign_extend 24)  (select  h (_ bv25 32) ) ) ) (?B51 ((_ sign_extend 24)  (select  h (_ bv23 32) ) ) ) (?B52 ((_ sign_extend 24)  (select  l (_ bv23 32) ) ) ) (?B53 ((_ sign_extend 24)  (select  h (_ bv28 32) ) ) ) (?B54 ((_ sign_extend 24)  (select  l (_ bv28 32) ) ) ) (?B55 ((_ sign_extend 24)  (select  h (_ bv27 32) ) ) ) (?B56 ((_ sign_extend 24)  (select  l (_ bv27 32) ) ) ) (?B57 ((_ sign_extend 24)  (select  l (_ bv26 32) ) ) ) (?B58 ((_ sign_extend 24)  (select  h (_ bv26 32) ) ) ) (?B59 ((_ sign_extend 24)  (select  l (_ bv30 32) ) ) ) (?B60 ((_ sign_extend 24)  (select  h (_ bv30 32) ) ) ) (?B61 ((_ sign_extend 24)  (select  h (_ bv31 32) ) ) ) (?B62 ((_ sign_extend 24)  (select  l (_ bv31 32) ) ) ) (?B63 ((_ sign_extend 24)  (select  h (_ bv29 32) ) ) ) (?B64 ((_ sign_extend 24)  (select  l (_ bv29 32) ) ) ) ) (and  (and  (and  (and  (and  (and  (and  (and  (and  (and  (and  (and  (and  (and  (and  (and  (and  (and  (and  (and  (and  (and  (and  (and  (and  (and  (and  (and  (and  (and  (and  (and  (and  (and  (and  (and  (and  (and  (and  (and  (and  (and  (and  (and  (and  (and  (and  (and  (and  (and  (and  (and  (and  (and  (and  (and  (and  (and  (and  (and  (and  (and  (and  (and  (and  (and  (and  (and  (and  (and  (and  (and  (and  (and  (and  (and  (and  (and  (and  (and  (and  (and  (and  (and  (and  (and  (and  (and  (and  (and  (and  (and  (and  (and  (and  (and  (and  (and  (and  (and  (and  (and  (and  (and  (and  (and  (and  (and  (and  (and  (and  (and  (and  (and  (and  (and  (and  (and  (and  (and  (and  (and  (and  (and  (and  (and  (and  (bvsle  (_ bv0 32) ?B3 ) (bvsle  ?B3 (_ bv1 32) ) ) (bvsle  (_ bv0 32) ?B4 ) ) (bvsle  ?B4 (_ bv1 32) ) ) (bvsle  (_ bv0 32) ?B6 ) ) (bvsle  ?B6 (_ bv1 32) ) ) (bvsle  (_ bv0 32) ?B5 ) ) (bvsle  ?B5 (_ bv1 32) ) ) (bvsle  (_ bv0 32) ?B1 ) ) (bvsle  ?B1 (_ bv1 32) ) ) (bvsle  (_ bv0 32) ?B2 ) ) (bvsle  ?B2 (_ bv1 32) ) ) (bvsle  (_ bv0 32) ?B13 ) ) (bvsle  ?B13 (_ bv1 32) ) ) (bvsle  (_ bv0 32) ?B9 ) ) (bvsle  ?B9 (_ bv1 32) ) ) (bvsle  (_ bv0 32) ?B11 ) ) (bvsle  ?B11 (_ bv1 32) ) ) (bvsle  (_ bv0 32) ?B10 ) ) (bvsle  ?B10 (_ bv1 32) ) ) (bvsle  (_ bv0 32) ?B8 ) ) (bvsle  ?B8 (_ bv1 32) ) ) (bvsle  (_ bv0 32) ?B7 ) ) (bvsle  ?B7 (_ bv1 32) ) ) (bvsle  (_ bv0 32) ?B16 ) ) (bvsle  ?B16 (_ bv1 32) ) ) (bvsle  (_ bv0 32) ?B20 ) ) (bvsle  ?B20 (_ bv1 32) ) ) (bvsle  (_ bv0 32) ?B15 ) ) (bvsle  ?B15 (_ bv1 32) ) ) (bvsle  (_ bv0 32) ?B17 ) ) (bvsle  ?B17 (_ bv1 32) ) ) (bvsle  (_ bv0 32) ?B19 ) ) (bvsle  ?B19 (_ bv1 32) ) ) (bvsle  (_ bv0 32) ?B18 ) ) (bvsle  ?B18 (_ bv1 32) ) ) (bvsle  (_ bv0 32) ?B12 ) ) (bvsle  ?B12 (_ bv1 32) ) ) (bvsle  (_ bv0 32) ?B14 ) ) (bvsle  ?B14 (_ bv1 32) ) ) (bvsle  (_ bv0 32) ?B26 ) ) (bvsle  ?B26 (_ bv1 32) ) ) (bvsle  (_ bv0 32) ?B21 ) ) (bvsle  ?B21 (_ bv1 32) ) ) (bvsle  (_ bv0 32) ?B25 ) ) (bvsle  ?B25 (_ bv1 32) ) ) (bvsle  (_ bv0 32) ?B24 ) ) (bvsle  ?B24 (_ bv1 32) ) ) (bvsle  (_ bv0 32) ?B22 ) ) (bvsle  ?B22 (_ bv1 32) ) ) (bvsle  (_ bv0 32) ?B23 ) ) (bvsle  ?B23 (_ bv1 32) ) ) (bvsle  (_ bv0 32) ?B31 ) ) (bvsle  ?B31 (_ bv1 32) ) ) (bvsle  (_ bv0 32) ?B32 ) ) (bvsle  ?B32 (_ bv1 32) ) ) (bvsle  (_ bv0 32) ?B27 ) ) (bvsle  ?B27 (_ bv1 32) ) ) (bvsle  (_ bv0 32) ?B28 ) ) (bvsle  ?B28 (_ bv1 32) ) ) (bvsle  (_ bv0 32) ?B30 ) ) (bvsle  ?B30 (_ bv1 32) ) ) (bvsle  (_ bv0 32) ?B29 ) ) (bvsle  ?B29 (_ bv1 32) ) ) (bvsle  (_ bv0 32) ?B35 ) ) (bvsle  ?B35 (_ bv1 32) ) ) (bvsle  (_ bv0 32) ?B36 ) ) (bvsle  ?B36 (_ bv1 32) ) ) (bvsle  (_ bv0 32) ?B37 ) ) (bvsle  ?B37 (_ bv1 32) ) ) (bvsle  (_ bv0 32) ?B38 ) ) (bvsle  ?B38 (_ bv1 32) ) ) (bvsle  (_ bv0 32) ?B33 ) ) (bvsle  ?B33 (_ bv1 32) ) ) (bvsle  (_ bv0 32) ?B34 ) ) (bvsle  ?B34 (_ bv1 32) ) ) (bvsle  (_ bv0 32) ?B43 ) ) (bvsle  ?B43 (_ bv1 32) ) ) (bvsle  (_ bv0 32) ?B42 ) ) (bvsle  ?B42 (_ bv1 32) ) ) (bvsle  (_ bv0 32) ?B46 ) ) (bvsle  ?B46 (_ bv1 32) ) ) (bvsle  (_ bv0 32) ?B44 ) ) (bvsle  ?B44 (_ bv1 32) ) ) (bvsle  (_ bv0 32) ?B39 ) ) (bvsle  ?B39 (_ bv1 32) ) ) (bvsle  (_ bv0 32) ?B45 ) ) (bvsle  ?B45 (_ bv1 32) ) ) (bvsle  (_ bv0 32) ?B40 ) ) (bvsle  ?B40 (_ bv1 32) ) ) (bvsle  (_ bv0 32) ?B41 ) ) (bvsle  ?B41 (_ bv1 32) ) ) (bvsle  (_ bv0 32) ?B51 ) ) (bvsle  ?B51 (_ bv1 32) ) ) (bvsle  (_ bv0 32) ?B52 ) ) (bvsle  ?B52 (_ bv1 32) ) ) (bvsle  (_ bv0 32) ?B48 ) ) (bvsle  ?B48 (_ bv1 32) ) ) (bvsle  (_ bv0 32) ?B47 ) ) (bvsle  ?B47 (_ bv1 32) ) ) (bvsle  (_ bv0 32) ?B50 ) ) (bvsle  ?B50 (_ bv1 32) ) ) (bvsle  (_ bv0 32) ?B49 ) ) (bvsle  ?B49 (_ bv1 32) ) ) (bvsle  (_ bv0 32) ?B58 ) ) (bvsle  ?B58 (_ bv1 32) ) ) (bvsle  (_ bv0 32) ?B57 ) ) (bvsle  ?B57 (_ bv1 32) ) ) (bvsle  (_ bv0 32) ?B55 ) ) (bvsle  ?B55 (_ bv1 32) ) ) (bvsle  (_ bv0 32) ?B56 ) ) (bvsle  ?B56 (_ bv1 32) ) ) (bvsle  (_ bv0 32) ?B53 ) ) (bvsle  ?B53 (_ bv1 32) ) ) (bvsle  (_ bv0 32) ?B54 ) ) (bvsle  ?B54 (_ bv1 32) ) ) (bvsle  (_ bv0 32) ?B63 ) ) (bvsle  ?B63 (_ bv1 32) ) ) (bvsle  (_ bv0 32) ?B64 ) ) (bvsle  ?B64 (_ bv1 32) ) ) (bvsle  (_ bv0 32) ?B60 ) ) (bvsle  ?B60 (_ bv1 32) ) ) (bvsle  (_ bv0 32) ?B59 ) ) (bvsle  ?B59 (_ bv1 32) ) ) (bvsle  (_ bv0 32) ?B61 ) ) (bvsle  ?B61 (_ bv1 32) ) ) (bvsle  (_ bv0 32) ?B62 ) ) (bvsle  ?B62 (_ bv1 32) ) ) ) )\n"
+	# For GPT14
+	# unexplored += "(assert (let ( (?B1 (concat  (select  b (_ bv3 32) ) (concat  (select  b (_ bv2 32) ) (concat  (select  b (_ bv1 32) ) (select  b (_ bv0 32) ) ) ) ) ) (?B2 (concat  (select  c (_ bv3 32) ) (concat  (select  c (_ bv2 32) ) (concat  (select  c (_ bv1 32) ) (select  c (_ bv0 32) ) ) ) ) ) (?B3 (concat  (select  a (_ bv3 32) ) (concat  (select  a (_ bv2 32) ) (concat  (select  a (_ bv1 32) ) (select  a (_ bv0 32) ) ) ) ) ) ) (and  (and  (and  (and  (and  (bvsle  (_ bv0 32) ?B3 ) (bvslt  ?B3 (_ bv16 32) ) ) (bvsle  (_ bv0 32) ?B1 ) ) (bvslt  ?B1 (_ bv16 32) ) ) (bvsle  (_ bv0 32) ?B2 ) ) (bvslt  ?B2 (_ bv4 32) ) ) ) )\n"
+	# For modpow2unsafe
+	# unexplored += "(assert (let ( (?B1 (concat  (select  b (_ bv3 32) ) (concat  (select  b (_ bv2 32) ) (concat  (select  b (_ bv1 32) ) (select  b (_ bv0 32) ) ) ) ) ) (?B2 (concat  (select  c (_ bv3 32) ) (concat  (select  c (_ bv2 32) ) (concat  (select  c (_ bv1 32) ) (select  c (_ bv0 32) ) ) ) ) ) (?B3 (concat  (select  a (_ bv3 32) ) (concat  (select  a (_ bv2 32) ) (concat  (select  a (_ bv1 32) ) (select  a (_ bv0 32) ) ) ) ) ) ) (and  (and  (and  (and  (and  (bvsle  (_ bv0 32) ?B3 ) (bvslt  ?B3 (_ bv256 32) ) ) (bvsle  (_ bv0 32) ?B1 ) ) (bvslt  ?B1 (_ bv256 32) ) ) (bvsle  (_ bv0 32) ?B2 ) ) (bvslt  ?B2 (_ bv256 32) ) ) ) )\n"
 	unexplored += "(check-sat)\n"
 	unexplored += "(exit)\n"
 	abs_path = os.path.join(directory, "unexplored.smt2")
@@ -274,7 +280,8 @@ def model_count_SearchMC(file, domain_size, bit_size):
 	for var_name in var_names:
 		output_names += "-output_name=" + var_name + " "
 	print(output_names)
-	process = subprocess.Popen(["./SearchMC.pl", "-input_type=smt", "-cl=0.95" ,"-thres=0.5"] + output_names.split() + [file], stdout = subprocess.PIPE)
+	print(file)
+	process = subprocess.Popen(["./SearchMC.pl", "-input_type=smt", "-cl=0.95" ,"-thres=0.5", "-term_cond=1"] + output_names.split() + [file], stdout = subprocess.PIPE)
 	result = process.communicate()[0].decode('utf-8')
 	process.terminate()
 	lines = result.split('\n')
@@ -379,7 +386,7 @@ def get_upper_lower_bounds(observationConstraints):
 #############################Calculate entropy#######################################
 
 ############Standard deviation method##############
-def get_max_entropy_standard_deviation(upper_lower_bounds, domain_size, uup):
+def get_max_entropy_standard_deviation(upper_lower_bounds, domain_size):
 	print("Domain Size: ", domain_size)
 	counts = {}
 	avg = domain_size//len(upper_lower_bounds)
@@ -687,7 +694,7 @@ def get_min_entropy_standard_deviation(upper_lower_bounds, domain_size):
 
 #################Hill climbing method (deterministic)#####################
 
-def get_next_neighbor_max_deterministic(current_counts, upper_lower_bounds, domain_size, current_entropy):
+def get_next_neighbor_max_deterministic(current_counts, upper_lower_bounds, domain_size, current_entropy, uup):
 	max_neighbor_entropy = current_entropy
 	max_neighbor = current_counts.copy()
 
@@ -705,9 +712,17 @@ def get_next_neighbor_max_deterministic(current_counts, upper_lower_bounds, doma
 					neighbor[i] = (cost, dec_count)
 					neighbor[j] = (neighbor_cost, inc_neighbor_count)
 					entropy = 0
-					for k in range(len(neighbor)):
-						entropy += -1 * neighbor[k][1]/domain_size * math.log(neighbor[k][1]/domain_size, 2)
+					if uup == 0:
+						for k in range(len(neighbor)):
+							entropy += -1 * neighbor[k][1]/domain_size * math.log(neighbor[k][1]/domain_size, 2)
+					else:
+						for k in range(len(neighbor)):
+							if neighbor[k][0] != 1000000:
+								entropy += -1 * neighbor[k][1]/domain_size * math.log(neighbor[k][1]/domain_size, 2)
+							else:
+								entropy += -1 * neighbor[k][1]/domain_size * math.log(1/domain_size, 2)
 					if entropy > max_neighbor_entropy:
+						#print("A BETTER NEIGHBOR IS FOUND")
 						max_neighbor_entropy = entropy
 						max_neighbor = neighbor.copy()
 						#return (max_neighbor, max_neighbor_entropy)
@@ -721,11 +736,19 @@ def get_next_neighbor_max_deterministic(current_counts, upper_lower_bounds, doma
 				if neighbor_count > upper_lower_bounds[neighbor_cost][0]:
 					dec_neighbor_count = neighbor_count - 1
 					neighbor[i] = (cost, inc_count)
-					entropy = 0
 					neighbor[j] = (neighbor_cost, dec_neighbor_count)
-					for k in range(len(neighbor)):
-						entropy += -1 * neighbor[k][1]/domain_size * math.log(neighbor[k][1]/domain_size, 2)
+					entropy = 0
+					if uup == 0:
+						for k in range(len(neighbor)):
+							entropy += -1 * neighbor[k][1]/domain_size * math.log(neighbor[k][1]/domain_size, 2)
+					else:
+						for k in range(len(neighbor)):
+							if neighbor[k][0] != 1000000:
+								entropy += -1 * neighbor[k][1]/domain_size * math.log(neighbor[k][1]/domain_size, 2)
+							else:
+								entropy += -1 * neighbor[k][1]/domain_size * math.log(1/domain_size, 2)
 					if entropy > max_neighbor_entropy:
+						#print("A BETTER NEIGHBOR IS FOUND")
 						max_neighbor_entropy = entropy
 						max_neighbor = neighbor.copy()
 						#return (max_neighbor, max_neighbor_entropy)
@@ -733,15 +756,18 @@ def get_next_neighbor_max_deterministic(current_counts, upper_lower_bounds, doma
 	#print(max_neighbor)
 	return (max_neighbor, max_neighbor_entropy)
 
-def get_max_entropy_hill_climbing_deterministic(upper_lower_bounds, domain_size):
-	current_counts_dict, current_entropy = get_max_entropy_standard_deviation(upper_lower_bounds, domain_size, uup)
+def get_max_entropy_hill_climbing_deterministic(upper_lower_bounds, domain_size, uup):
+	if uup == 0:
+		current_counts_dict, current_entropy = get_max_entropy_standard_deviation(upper_lower_bounds, domain_size)
+	else:
+		current_counts_dict, current_entropy = get_max_entropy_with_unexplored_SLSQP(upper_lower_bounds, domain_size)
 	current_counts = []
 	for cost in current_counts_dict:
 		current_counts.append((cost, current_counts_dict[cost]))
 
 	while True:
 		#print("current_counts:", current_counts)
-		neighbor = get_next_neighbor_max_deterministic(current_counts, upper_lower_bounds, domain_size, current_entropy)
+		neighbor = get_next_neighbor_max_deterministic(current_counts, upper_lower_bounds, domain_size, current_entropy, uup)
 		if neighbor[1] <= current_entropy:
 			max_entropy = current_entropy
 			break
@@ -1137,10 +1163,11 @@ def shannon_entropy(probabilities):
 		entropy += -1 * math.log(p, 2) * p
 	return entropy
 
-def negative_shannon_entropy(probabilities):
+def negative_shannon_entropy(probabilities, domain_size):
 	neg_entropy = 0
-	for p in probabilities:
-		neg_entropy += math.log(p, 2) * p
+	for i in range(len(probabilities) - 1):
+		neg_entropy += math.log(probabilities[i], 2) * probabilities[i]
+	neg_entropy += math.log(1/domain_size, 2) * probabilities[-1]
 	return neg_entropy
 
 def constraint_on_sum(probabilities):
@@ -1149,7 +1176,7 @@ def constraint_on_sum(probabilities):
 		res += p
 	return res - 1;
 
-def get_max_entropy_SLSQP(upper_lower_bounds, domain_size):
+def get_max_entropy_with_unexplored_SLSQP(upper_lower_bounds, domain_size):
 	initial_guess = []
 	s = z3.Solver()
 	var_list = {}
@@ -1168,20 +1195,42 @@ def get_max_entropy_SLSQP(upper_lower_bounds, domain_size):
 
 	upper_lower_bound_prob = list()
 	cost_list = list()
-	for cost, bounds in upper_lower_bounds.items():
+	for cost, bounds in sorted(upper_lower_bounds.items()):
 		upper_lower_bound_prob.append((bounds[0]/domain_size, bounds[1]/domain_size))
 		cost_list.append(cost)
 		initial_guess.append(int(str(z3_model[var_list[cost]]))/domain_size)
 	
 	cons = [{'type':'eq', 'fun':constraint_on_sum}]
 
-	res = minimize(negative_shannon_entropy, initial_guess, method='SLSQP', bounds = upper_lower_bound_prob, constraints = cons)
+	res = minimize(negative_shannon_entropy, initial_guess, args = (domain_size), method='SLSQP', bounds = upper_lower_bound_prob, constraints = cons)
 
+	sum_final_counts = 0
 	max_entropy_point = {}
+	max_entropy_prob = {}
+	max_entropy = -1 * res.fun
 	for i in range(len(cost_list)):
 		max_entropy_point[cost_list[i]] = int(round(res.x[i] * domain_size))
+		max_entropy_prob[cost_list[i]] = res.x[i] * domain_size
+		sum_final_counts += max_entropy_point[cost_list[i]]
+	if sum_final_counts != domain_size:
+		print("NEED TO INSPECT")
+		print("max_entropy_point as counts:", max_entropy_point)
+		print("max_entropy_point as probabilities:", max_entropy_prob)
+		print("upper and lower bounds:", upper_lower_bounds)
+		diff = domain_size - sum_final_counts
+		print("Diff =", diff)
+		for cost in max_entropy_point:
+			if max_entropy_point[cost] + diff >= upper_lower_bounds[cost][0] and max_entropy_point[cost] + diff <= upper_lower_bounds[cost][1]:
+				max_entropy_point[cost] += diff
+			break
+		max_entropy = 0
+		for cost in max_entropy_point:
+			if cost != 1000000:
+				max_entropy += -1 * max_entropy_point[cost]/domain_size * math.log(max_entropy_point[cost]/domain_size, 2)
+			else:
+				max_entropy += -1 * max_entropy_point[cost]/domain_size * math.log(1 / domain_size, 2)
 
-	return (max_entropy_point, -1 * res.fun)
+	return (max_entropy_point, max_entropy)
 
 def get_max_entropy_CVXPY(upper_lower_bounds, domain_size):
 	upper_lower_bounds_list = []
@@ -1384,7 +1433,7 @@ if __name__ == '__main__':
 			else:
 				if uup == 1:
 					output_dir = klee_output_dir[len('-output-dir='):]
-					add_unexplored_path(output_dir, domain_size)
+					add_unexplored_path(output_dir)
 				observationConstraints = get_observation_constraints(klee_output_dir[len('-output-dir='):],"searchMC", domain_size, bit_size, sign)
 			
 			print("Model countng time:", time.time() - start_time)
@@ -1393,6 +1442,8 @@ if __name__ == '__main__':
 			upper_lower_bounds_copy = upper_lower_bounds
 
 			if uup == 1 and dict_args["tool"] == "abc-exact":
+				output_dir = klee_output_dir[len('-output-dir='):]
+				#add_unexplored_path(output_dir)
 				explored_count = 0
 				max_ = 0
 				cost_for_max = 0
@@ -1432,7 +1483,7 @@ if __name__ == '__main__':
 				for key in upper_lower_bounds:
 					entropy += -1 * upper_lower_bounds[key][1]/domain_size * math.log(upper_lower_bounds[key][1]/domain_size, 2)
 				print("Entropy : {}".format(entropy))
-				max_entropy_hill = get_max_entropy_hill_climbing_deterministic(upper_lower_bounds, domain_size)
+				max_entropy_hill = get_max_entropy_hill_climbing_deterministic(upper_lower_bounds, domain_size, uup)
 				print("Entropy using hill climbing: {}".format(entropy))
 
 			if dict_args["tool"] != "abc-exact":
@@ -1442,7 +1493,7 @@ if __name__ == '__main__':
 				#max_entropy_stddev = get_max_entropy_standard_deviation(upper_lower_bounds, domain_size)
 				#min_entropy_stddev = get_min_entropy_standard_deviation(upper_lower_bounds, domain_size)
 				#print("Max entropy (stddev): {}, Min entropy (stddev): {}".format(max_entropy_stddev[1], min_entropy_stddev[1]))
-				max_entropy_hill = get_max_entropy_hill_climbing_deterministic(upper_lower_bounds, domain_size)
+				max_entropy_hill = get_max_entropy_hill_climbing_deterministic(upper_lower_bounds, domain_size, uup)
 				#min_entropy_hill = get_min_entropy_hill_climbing_deterministic(upper_lower_bounds, domain_size)
 				print("Max entropy (hill climbing): {}".format(max_entropy_hill[1]))
 				#print("Max entropy (hill climbing): {}, Min entropy (hill climbing): {}".format(max_entropy_hill[1], min_entropy_hill[1]))
@@ -1455,13 +1506,14 @@ if __name__ == '__main__':
 				min_entropy_polyhedron = get_min_entropy_polyhedron(upper_lower_bounds, domain_size)
 				print("Min entropy (polyhedron): {}".format(min_entropy_polyhedron[1]))
 
+				'''
 				if uup == 1:
 					max_entropy_point = max_entropy_hill[0]
 					min_entropy_point = min_entropy_polyhedron[0]
-					unexplored_max_count = max_entropy_point[10000]
-					unexplored_min_count = min_entropy_point[10000]
-					max_entropy_point.pop(10000)
-					min_entropy_point.pop(10000)
+					unexplored_max_count = max_entropy_point[1000000]
+					unexplored_min_count = min_entropy_point[1000000]
+					max_entropy_point.pop(1000000)
+					min_entropy_point.pop(1000000)
 					max_instruction = max(max_entropy_point)
 					print(unexplored_max_count)
 					#if unexplored_max_count < 256: #to avoid memory error
@@ -1490,6 +1542,7 @@ if __name__ == '__main__':
 					min_entropy_polyhedron = (min_entropy_point, min_entropy)
 					print("Max entropy (hill climbing): {}".format(max_entropy_hill[1]))
 					print("Min entropy (polyhedron): {}".format(min_entropy_polyhedron[1]))
+				'''
 				#print("Max entropy (SLSQP): {}, Min entropy (polyhedron): {}".format(max_entropy_SLSQP[1], min_entropy_polyhedron[1]))
 
 				#print("Max entropy point (stddev): {}, Min entropy point (stddev): {}".format(max_entropy_stddev[0], min_entropy_stddev[0]))
